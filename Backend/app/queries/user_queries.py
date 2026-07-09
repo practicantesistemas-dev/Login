@@ -1,0 +1,186 @@
+"""Queries Oracle para usuarios, departamentos y permisos."""
+
+USER_DATA_SUBQUERY = """
+    SELECT
+        u.ID                                        AS ID_USUARIO,
+        u.USUARIO                                   AS USUARIO,
+        u.CONTRASENA                                AS CONTRASENA_INTRANET,
+        u.NUM_ID                                    AS NUM_ID,
+        u.ID_AREA                                   AS ID_AREA,
+        u.PORTAL_ROL                                AS PORTAL_ROL,
+        u.ESTADO                                    AS ESTADO,
+        d.DEPID                                     AS DEPID,
+        d.DEPDES                                    AS DEPDES,
+        c.COLEMAILL                                 AS COLEMAILL,
+        c.COLEMAILP                                 AS COLEMAILP,
+        c.COLNID                                    AS COLNID,
+        c.COLTID                                    AS COLTID,
+        r.CONTRASENA                                AS CONTRASENA_REPORT,
+        r.USUARIO                                   AS REPORT_USUARIO,
+        r.IDNUM                                     AS REPORT_IDNUM,
+        r.AREA                                      AS AREA_REPORT,
+        u.NOMBRES                                   AS NOMBRES
+    FROM BDLIGA.INTRANET_USUARIOS u
+    LEFT JOIN BDLIGA.INTRANET_REPORT_USUARIOS r
+        ON TO_CHAR(u.NUM_ID) = r.IDNUM
+    LEFT JOIN BDLIGA.INTRANET_COLABORADORES c
+        ON TO_CHAR(u.NUM_ID) = c.COLNID
+    LEFT JOIN BDLIGA.INTRANET_DEPARTAMENTOS d
+        ON u.ID_AREA = d.DEPID
+"""
+
+LIST_USERS_SUMMARY_QUERY = f"""
+SELECT
+    t0.ID_USUARIO,
+    t0.USUARIO,
+    t0.NOMBRES,
+    t0.NUM_ID,
+    t0.ID_AREA,
+    t0.DEPDES,
+    t0.PORTAL_ROL,
+    t0.ESTADO,
+    t0.COLEMAILL,
+    t0.COLEMAILP,
+    t0.REPORT_USUARIO,
+    t0.REPORT_IDNUM,
+    t0.AREA_REPORT,
+    (
+        SELECT COUNT(*)
+        FROM BDLIGA.INTRANET_APP_PERMISOS p
+        WHERE UPPER(TRIM(p.PERMUSU)) = UPPER(TRIM(t0.USUARIO))
+    ) AS TOTAL_APPS
+FROM (
+{USER_DATA_SUBQUERY}
+) t0
+WHERE 1 = 1
+{{area_filter}}
+ORDER BY t0.NOMBRES, t0.USUARIO
+"""
+
+LIST_USERS_WITH_APPS_QUERY = f"""
+SELECT
+    t0.ID_USUARIO,
+    t0.USUARIO,
+    t0.NOMBRES,
+    t0.NUM_ID,
+    t0.ID_AREA,
+    t0.DEPDES,
+    t0.PORTAL_ROL,
+    t0.ESTADO,
+    t0.COLEMAILL,
+    t0.COLEMAILP,
+    t0.COLNID,
+    t0.COLTID,
+    t0.REPORT_USUARIO,
+    t0.REPORT_IDNUM,
+    t0.CONTRASENA_REPORT,
+    a.APUSID,
+    a.APUSNO,
+    a.APUSLI
+FROM (
+{USER_DATA_SUBQUERY}
+) t0
+LEFT JOIN BDLIGA.INTRANET_APP_PERMISOS p
+    ON UPPER(TRIM(TO_CHAR(p.PERMUSU))) = UPPER(TRIM(t0.USUARIO))
+LEFT JOIN BDLIGA.INTRANET_APLICACIONES_USUARIOS a
+    ON p.PERMAPP = a.APUSID
+WHERE 1 = 1
+{{area_filter}}
+{{user_filter}}
+ORDER BY t0.NOMBRES, t0.USUARIO, a.APUSNO
+"""
+
+AUTH_USER_QUERY = f"""
+SELECT
+    t0.USUARIO,
+    t0.CONTRASENA_INTRANET,
+    t0.CONTRASENA_REPORT,
+    t0.NOMBRES,
+    t0.COLEMAILL,
+    t0.COLEMAILP,
+    t0.REPORT_USUARIO,
+    t0.REPORT_IDNUM,
+    t0.PORTAL_ROL,
+    t0.ID_AREA,
+    t0.DEPDES,
+    t0.ESTADO
+FROM (
+{USER_DATA_SUBQUERY}
+) t0
+WHERE UPPER(TRIM(t0.USUARIO)) = UPPER(TRIM(:usuario))
+"""
+
+USER_BY_USERNAME_QUERY = f"""
+SELECT
+    t0.USUARIO,
+    t0.NOMBRES,
+    t0.COLEMAILL,
+    t0.COLEMAILP,
+    t0.REPORT_USUARIO,
+    t0.REPORT_IDNUM,
+    t0.PORTAL_ROL,
+    t0.ID_AREA,
+    t0.DEPDES,
+    t0.ESTADO
+FROM (
+{USER_DATA_SUBQUERY}
+) t0
+WHERE UPPER(TRIM(t0.USUARIO)) = UPPER(TRIM(:usuario))
+"""
+
+APPS_BY_USER_QUERY = f"""
+SELECT
+    a.APUSLI,
+    a.APUSNO,
+    t0.COLEMAILL,
+    t0.COLEMAILP,
+    t0.COLNID,
+    t0.COLTID,
+    t0.CONTRASENA_REPORT,
+    t0.NOMBRES,
+    p.PERMUSU AS USUARIO
+FROM BDLIGA.INTRANET_APP_PERMISOS p
+INNER JOIN BDLIGA.INTRANET_APLICACIONES_USUARIOS a
+    ON p.PERMAPP = a.APUSID
+INNER JOIN (
+{USER_DATA_SUBQUERY}
+) t0
+    ON TO_CHAR(p.PERMUSU) = t0.USUARIO
+WHERE UPPER(TRIM(TO_CHAR(p.PERMUSU))) = UPPER(TRIM(:usuario))
+  AND a.APUSNO IS NOT NULL
+  AND a.APUSLI IS NOT NULL
+  AND NVL(a.PORTAL_ESTADO, 'inactiva') = 'activa'
+GROUP BY
+    a.APUSLI,
+    a.APUSNO,
+    t0.COLEMAILL,
+    t0.COLEMAILP,
+    t0.COLNID,
+    t0.COLTID,
+    t0.CONTRASENA_REPORT,
+    t0.NOMBRES,
+    p.PERMUSU
+ORDER BY
+    t0.NOMBRES,
+    a.APUSNO
+"""
+
+LIST_DEPARTMENTS_QUERY = """
+SELECT DEPID, DEPDES
+FROM BDLIGA.INTRANET_DEPARTAMENTOS
+ORDER BY DEPDES
+"""
+
+LIST_APPLICATIONS_QUERY = """
+SELECT APUSID, APUSNO, APUSLI, NVL(PORTAL_ESTADO, 'inactiva') AS PORTAL_ESTADO
+FROM BDLIGA.INTRANET_APLICACIONES_USUARIOS
+WHERE APUSNO IS NOT NULL
+ORDER BY APUSNO
+"""
+
+USER_PERMISSIONS_QUERY = """
+SELECT PERMAPP
+FROM BDLIGA.INTRANET_APP_PERMISOS
+WHERE UPPER(TRIM(PERMUSU)) = UPPER(TRIM(:usuario))
+ORDER BY PERMAPP
+"""
