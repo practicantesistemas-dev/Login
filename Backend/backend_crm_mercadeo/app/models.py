@@ -1,6 +1,6 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import BigInteger, Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -69,3 +69,176 @@ class CampanaSegmento(Base):
 
     campana: Mapped["Campana"] = relationship(back_populates="segmentos")
     segmento: Mapped["Segmento"] = relationship(back_populates="campanas")
+
+
+# ---------------------------------------------------------------------------
+# Modulo: Comercial (CRM Comercial)
+#
+# FKs internas: definidas aqui con ForeignKey.
+# FKs cross-modulo (usuarios, servicios, intranet_planliga): quedan como
+# columnas sin ForeignKey por ahora. Se agregan al final.
+# ---------------------------------------------------------------------------
+
+
+class Empresa(Base):
+    __tablename__ = "mercadeo_crm_empresas"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    razon_social: Mapped[str] = mapped_column(String(200), nullable=False)
+    nit: Mapped[str] = mapped_column(String(30), nullable=False, unique=True)
+    industria: Mapped[str | None] = mapped_column(String(100))
+    direccion: Mapped[str | None] = mapped_column(String(200))
+    ciudad: Mapped[str | None] = mapped_column(String(100))
+    estado: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    responsable_id: Mapped[int | None] = mapped_column(Integer)  # FK cross -> usuarios
+
+
+class Contacto(Base):
+    __tablename__ = "mercadeo_crm_contactos"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tipo_contacto: Mapped[str | None] = mapped_column(String(50))
+    tipo_documento: Mapped[str | None] = mapped_column(String(20))
+    documento: Mapped[str | None] = mapped_column(String(30))
+    nombre1: Mapped[str] = mapped_column(String(100), nullable=False)
+    nombre2: Mapped[str | None] = mapped_column(String(100))
+    apellido1: Mapped[str | None] = mapped_column(String(100))
+    apellido2: Mapped[str | None] = mapped_column(String(100))
+    sexo: Mapped[str | None] = mapped_column(String(10))
+    correo: Mapped[str | None] = mapped_column(String(150))
+    telefono: Mapped[str | None] = mapped_column(String(30))
+    cargo: Mapped[str | None] = mapped_column(String(100))
+    ciudad: Mapped[str | None] = mapped_column(String(100))
+    fecha_nacimiento: Mapped[date | None] = mapped_column(Date)
+    estado: Mapped[str | None] = mapped_column(String(30))
+    empresa_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_empresas.id"))
+    responsable_id: Mapped[int | None] = mapped_column(Integer)  # FK cross -> usuarios
+
+
+class Embudo(Base):
+    __tablename__ = "mercadeo_crm_embudos"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    nombre: Mapped[str] = mapped_column(String(150), nullable=False)
+    descripcion: Mapped[str | None] = mapped_column(String(255))
+
+
+class EtapaEmbudo(Base):
+    __tablename__ = "mercadeo_crm_etapas_embudo"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    embudo_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_embudos.id"))
+    nombre: Mapped[str] = mapped_column(String(100), nullable=False)
+    orden: Mapped[int | None] = mapped_column(Integer)
+
+
+class Oportunidad(Base):
+    __tablename__ = "mercadeo_crm_oportunidades"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    empresa_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_empresas.id"))
+    contacto_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_contactos.id"))
+    servicio_id: Mapped[int | None] = mapped_column(Integer)  # FK cross -> mercadeo_crm_servicios
+    etapa_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_etapas_embudo.id"))
+    responsable_id: Mapped[int | None] = mapped_column(Integer)  # FK cross -> usuarios
+    valor: Mapped[float | None] = mapped_column(Float)
+    probabilidad: Mapped[float | None] = mapped_column(Float)
+    estado: Mapped[str | None] = mapped_column(String(30))
+    plan_liga_titular_id: Mapped[int | None] = mapped_column(Integer)  # FK cross -> intranet_planliga
+
+
+class Bitacora(Base):
+    __tablename__ = "mercadeo_crm_bitacora"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    usuario_id: Mapped[int | None] = mapped_column(Integer)  # FK cross -> usuarios
+    contacto_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_contactos.id"))
+    empresa_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_empresas.id"))
+    oportunidad_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_oportunidades.id"))
+    titular_id: Mapped[int | None] = mapped_column(Integer)  # FK cross -> intranet_planliga
+    tipo: Mapped[str | None] = mapped_column(String(50))
+    descripcion: Mapped[str | None] = mapped_column(Text)
+    proximo_paso: Mapped[str | None] = mapped_column(Text)
+    fecha: Mapped[datetime | None] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+
+
+# ---------------------------------------------------------------------------
+# Modulo: Servicios y Proveedores
+#
+# FKs internas (definidas aqui con ForeignKey):
+#   - actividad.proveedor_id -> proveedores.id     [1 proveedor : 0..* actividades]
+#   - titular_servicios.servicio_id -> servicios.id [1 servicio  : 0..* titular_servicios]
+#
+# FKs cross SALIENTES (columnas sin ForeignKey, se agregan al final):
+#   - servicios.responsable_id -> usuarios.id (Seguridad)
+#   - titular_servicios.planliga_id -> intranet_planliga.id (Integraciones)
+#
+# FKs cross ENTRANTES (declaradas en el otro modulo, informativas):
+#   - mercadeo_crm_oportunidades.servicio_id -> servicios.id  [1 a 0..*]
+#     (definida en el modulo Comercial, se agrega al final)
+# ---------------------------------------------------------------------------
+
+
+class Proveedor(Base):
+    __tablename__ = "mercadeo_crm_proveedores"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    nombre: Mapped[str] = mapped_column(String(150), nullable=False)
+    categoria: Mapped[str | None] = mapped_column(String(100))
+    nit: Mapped[str | None] = mapped_column(String(30))
+    correo: Mapped[str | None] = mapped_column(String(150))
+    telefono: Mapped[str | None] = mapped_column(String(30))
+    estado: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+
+class Actividad(Base):
+    __tablename__ = "mercadeo_crm_actividad"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    nombre: Mapped[str] = mapped_column(String(150), nullable=False)
+    cantidad: Mapped[float | None] = mapped_column(Float)
+    precio: Mapped[float | None] = mapped_column(Float)
+    descripcion: Mapped[str | None] = mapped_column(String(255))
+    proveedor_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_proveedores.id"))
+
+
+class Servicio(Base):
+    __tablename__ = "mercadeo_crm_servicios"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    nombre: Mapped[str] = mapped_column(String(150), nullable=False)
+    categoria: Mapped[str | None] = mapped_column(String(100))
+    tipo: Mapped[str | None] = mapped_column(String(50))
+    max_beneficiarios: Mapped[int | None] = mapped_column(Integer)
+    estado: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    responsable_id: Mapped[int | None] = mapped_column(Integer)  # FK cross -> usuarios
+    descripcion: Mapped[str | None] = mapped_column(Text)
+
+
+class TitularServicio(Base):
+    __tablename__ = "mercadeo_crm_titular_servicios"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    planliga_id: Mapped[int | None] = mapped_column(Integer)  # FK cross -> intranet_planliga
+    servicio_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_servicios.id"))
+    fecha_asignacion: Mapped[datetime | None] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    estado: Mapped[str | None] = mapped_column(String(30))
+    observaciones: Mapped[str | None] = mapped_column(Text)
+
+
+class Importacion(Base):
+    __tablename__ = "mercadeo_crm_importaciones"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    usuario_id: Mapped[int | None] = mapped_column(BigInteger)  # FK cross -> usuarios (sin relacionar aun)
+    tipo: Mapped[str | None] = mapped_column(String(50))
+    archivo: Mapped[str | None] = mapped_column(String(255))
+    registros: Mapped[int | None] = mapped_column(Integer)
+    errores: Mapped[int | None] = mapped_column(Integer)
+    fecha: Mapped[datetime | None] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )

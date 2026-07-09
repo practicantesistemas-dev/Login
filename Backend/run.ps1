@@ -12,4 +12,4 @@ Write-Host "Iniciando backend en http://localhost:$port (Oracle BDLIGA)..."
 Write-Host "Version esperada en /health: 2.10-oracle-admin"
 Set-Location $PSScriptRoot
 $env:PYTHONPATH = "."
-uvicorn main:app --reload --host 127.0.0.1 --port $port
+python -m uvicorn main:app --reload --host 127.0.0.1 --port $port
