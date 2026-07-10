@@ -25,11 +25,12 @@ class ContactoEtiqueta(Base):
     etiqueta_id: Mapped[int] = mapped_column(
         ForeignKey("mercadeo_crm_etiquetas.id"), primary_key=True
     )
-    usuario_id: Mapped[int] = mapped_column(Integer)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("intranet_usuarios.id"))
     fecha: Mapped[datetime] = mapped_column(DateTime)
 
     contacto: Mapped["Contacto"] = relationship(back_populates="etiquetas")
     etiqueta: Mapped["Etiqueta"] = relationship(back_populates="contactos")
+    usuario: Mapped["Usuario"] = relationship(back_populates="contacto_etiquetas")
 
 
 class Campana(Base):
@@ -67,11 +68,12 @@ class CampanaSegmento(Base):
     segmento_id: Mapped[int] = mapped_column(
         ForeignKey("mercadeo_crm_segmentos.id"), primary_key=True
     )
-    usuario_id: Mapped[int] = mapped_column(Integer)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("intranet_usuarios.id"))
     fecha: Mapped[datetime] = mapped_column(DateTime)
 
     campana: Mapped["Campana"] = relationship(back_populates="segmentos")
     segmento: Mapped["Segmento"] = relationship(back_populates="campanas")
+    usuario: Mapped["Usuario"] = relationship(back_populates="campana_segmentos")
 
 
 # ---------------------------------------------------------------------------
@@ -111,7 +113,9 @@ class Empresa(Base):
     direccion: Mapped[str | None] = mapped_column(String(200))
     ciudad: Mapped[str | None] = mapped_column(String(100))
     estado: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    responsable_id: Mapped[int | None] = mapped_column(Integer)  # FK cross -> usuarios
+    responsable_id: Mapped[int | None] = mapped_column(ForeignKey("intranet_usuarios.id"))
+
+    responsable: Mapped["Usuario | None"] = relationship(back_populates="empresas")
 
 
 class Contacto(Base):
@@ -133,9 +137,10 @@ class Contacto(Base):
     fecha_nacimiento: Mapped[date | None] = mapped_column(Date)
     estado: Mapped[str | None] = mapped_column(String(30))
     empresa_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_empresas.id"))
-    responsable_id: Mapped[int | None] = mapped_column(Integer)  # FK cross -> usuarios
+    responsable_id: Mapped[int | None] = mapped_column(ForeignKey("intranet_usuarios.id"))
 
     etiquetas: Mapped[list["ContactoEtiqueta"]] = relationship(back_populates="contacto")
+    responsable: Mapped["Usuario | None"] = relationship(back_populates="contactos")
 
 
 class Embudo(Base):
@@ -163,7 +168,7 @@ class Oportunidad(Base):
     contacto_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_contactos.id"))
     servicio_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_servicios.id"))
     etapa_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_etapas_embudo.id"))
-    responsable_id: Mapped[int | None] = mapped_column(Integer)  # FK cross -> usuarios
+    responsable_id: Mapped[int | None] = mapped_column(ForeignKey("intranet_usuarios.id"))
     valor: Mapped[float | None] = mapped_column(Float)
     probabilidad: Mapped[float | None] = mapped_column(Float)
     estado: Mapped[str | None] = mapped_column(String(30))
@@ -171,13 +176,14 @@ class Oportunidad(Base):
 
     servicio: Mapped["Servicio | None"] = relationship(back_populates="oportunidades")
     plan_liga_titular: Mapped["PlanLiga | None"] = relationship(back_populates="oportunidades")
+    responsable: Mapped["Usuario | None"] = relationship(back_populates="oportunidades")
 
 
 class Bitacora(Base):
     __tablename__ = "mercadeo_crm_bitacora"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    usuario_id: Mapped[int | None] = mapped_column(Integer)  # FK cross -> usuarios
+    usuario_id: Mapped[int | None] = mapped_column(ForeignKey("intranet_usuarios.id"))
     contacto_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_contactos.id"))
     empresa_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_empresas.id"))
     oportunidad_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_oportunidades.id"))
@@ -190,6 +196,7 @@ class Bitacora(Base):
     )
 
     titular: Mapped["PlanLiga | None"] = relationship(back_populates="bitacoras")
+    usuario: Mapped["Usuario | None"] = relationship(back_populates="bitacoras")
 
 
 # ---------------------------------------------------------------------------
@@ -199,13 +206,31 @@ class Bitacora(Base):
 #   - actividad.proveedor_id -> proveedores.id     [1 proveedor : 0..* actividades]
 #   - titular_servicios.servicio_id -> servicios.id [1 servicio  : 0..* titular_servicios]
 #   - titular_servicios.planliga_id -> intranet_planliga.id [1 planliga : 0..* titular_servicios]
-#
-# FKs cross SALIENTES (columnas sin ForeignKey, se agregan al final):
-#   - servicios.responsable_id -> usuarios.id (Seguridad)
+#   - servicios.responsable_id -> intranet_usuarios.id [1 usuario : 0..* servicios]
 #
 # FKs cross ENTRANTES (declaradas en el modulo Comercial, informativas):
 #   - mercadeo_crm_oportunidades.servicio_id -> servicios.id  [1 servicio : 0..* oportunidades]
+#
+# intranet_usuarios es una tabla externa (modulo Seguridad/Login) que ya
+# existe en la base de datos. Se mapea aqui de forma minima (solo el id),
+# igual que intranet_planliga, unicamente para declarar la FK real desde
+# Servicio.responsable_id.
 # ---------------------------------------------------------------------------
+
+
+class Usuario(Base):
+    __tablename__ = "intranet_usuarios"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    servicios: Mapped[list["Servicio"]] = relationship(back_populates="responsable")
+    importaciones: Mapped[list["Importacion"]] = relationship(back_populates="usuario")
+    contacto_etiquetas: Mapped[list["ContactoEtiqueta"]] = relationship(back_populates="usuario")
+    campana_segmentos: Mapped[list["CampanaSegmento"]] = relationship(back_populates="usuario")
+    empresas: Mapped[list["Empresa"]] = relationship(back_populates="responsable")
+    contactos: Mapped[list["Contacto"]] = relationship(back_populates="responsable")
+    oportunidades: Mapped[list["Oportunidad"]] = relationship(back_populates="responsable")
+    bitacoras: Mapped[list["Bitacora"]] = relationship(back_populates="usuario")
 
 
 class Proveedor(Base):
@@ -240,9 +265,10 @@ class Servicio(Base):
     tipo: Mapped[str | None] = mapped_column(String(50))
     max_beneficiarios: Mapped[int | None] = mapped_column(Integer)
     estado: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    responsable_id: Mapped[int | None] = mapped_column(Integer)  # FK cross -> usuarios
+    responsable_id: Mapped[int | None] = mapped_column(ForeignKey("intranet_usuarios.id"))
     descripcion: Mapped[str | None] = mapped_column(Text)
 
+    responsable: Mapped["Usuario | None"] = relationship(back_populates="servicios")
     oportunidades: Mapped[list["Oportunidad"]] = relationship(back_populates="servicio")
 
 
@@ -265,7 +291,7 @@ class Importacion(Base):
     __tablename__ = "mercadeo_crm_importaciones"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    usuario_id: Mapped[int | None] = mapped_column(BigInteger)  # FK cross -> usuarios (sin relacionar aun)
+    usuario_id: Mapped[int | None] = mapped_column(ForeignKey("intranet_usuarios.id"))
     tipo: Mapped[str | None] = mapped_column(String(50))
     archivo: Mapped[str | None] = mapped_column(String(255))
     registros: Mapped[int | None] = mapped_column(Integer)
@@ -273,3 +299,5 @@ class Importacion(Base):
     fecha: Mapped[datetime | None] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc)
     )
+
+    usuario: Mapped["Usuario | None"] = relationship(back_populates="importaciones")
