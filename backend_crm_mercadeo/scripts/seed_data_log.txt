@@ -1,0 +1,8 @@
+=== Seed de datos de prueba - CRM Mercadeo ===
+Fecha de ejecucion: 2026-07-10T17:05:30.749620+00:00
+
+Usando intranet_usuarios.id = 0 para las relaciones de usuario.
+Usando intranet_planliga.id = 1 para las relaciones de titular.
+
+
+ERROR: la insercion fallo y se hizo rollback. Revisa el traceback en consola.

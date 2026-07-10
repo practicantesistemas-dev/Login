@@ -64,7 +64,6 @@ Alembic no se ejecuta en cada arranque del servidor: solo entra en juego cuando 
   ```
 
   Esto compara el estado actual de la base de datos contra el historial de migraciones en `alembic/` y aplica las que falten. Si no hay ninguna pendiente, no hace nada.
-
 - **Modificaste tú mismo `app/models.py`** (agregaste/quitaste una tabla o columna). Ahí sí generas una migración nueva y la aplicas:
 
   ```powershell

@@ -3,7 +3,7 @@ from datetime import date, datetime, timezone
 from sqlalchemy import BigInteger, Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.database import Base
+from .database import Base
 
 
 class Etiqueta(Base):
@@ -43,6 +43,12 @@ class Campana(Base):
     estado: Mapped[str] = mapped_column(String(30))
     fecha_inicio: Mapped[date] = mapped_column(Date)
     fecha_fin: Mapped[date] = mapped_column(Date)
+    fecha_creacion: Mapped[datetime | None] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    fecha_actualizacion: Mapped[datetime | None] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
+    )
 
     segmentos: Mapped[list["CampanaSegmento"]] = relationship(back_populates="campana")
 
@@ -114,6 +120,12 @@ class Empresa(Base):
     ciudad: Mapped[str | None] = mapped_column(String(100))
     estado: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     responsable_id: Mapped[int | None] = mapped_column(ForeignKey("intranet_usuarios.id"))
+    fecha_creacion: Mapped[datetime | None] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    fecha_actualizacion: Mapped[datetime | None] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
+    )
 
     responsable: Mapped["Usuario | None"] = relationship(back_populates="empresas")
 
@@ -138,6 +150,12 @@ class Contacto(Base):
     estado: Mapped[str | None] = mapped_column(String(30))
     empresa_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_empresas.id"))
     responsable_id: Mapped[int | None] = mapped_column(ForeignKey("intranet_usuarios.id"))
+    fecha_creacion: Mapped[datetime | None] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    fecha_actualizacion: Mapped[datetime | None] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
+    )
 
     etiquetas: Mapped[list["ContactoEtiqueta"]] = relationship(back_populates="contacto")
     responsable: Mapped["Usuario | None"] = relationship(back_populates="contactos")
@@ -173,6 +191,12 @@ class Oportunidad(Base):
     probabilidad: Mapped[float | None] = mapped_column(Float)
     estado: Mapped[str | None] = mapped_column(String(30))
     plan_liga_titular_id: Mapped[int | None] = mapped_column(ForeignKey("intranet_planliga.id"))
+    fecha_creacion: Mapped[datetime | None] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    fecha_actualizacion: Mapped[datetime | None] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
+    )
 
     servicio: Mapped["Servicio | None"] = relationship(back_populates="oportunidades")
     plan_liga_titular: Mapped["PlanLiga | None"] = relationship(back_populates="oportunidades")
@@ -243,6 +267,12 @@ class Proveedor(Base):
     correo: Mapped[str | None] = mapped_column(String(150))
     telefono: Mapped[str | None] = mapped_column(String(30))
     estado: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    fecha_creacion: Mapped[datetime | None] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    fecha_actualizacion: Mapped[datetime | None] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
+    )
 
 
 class Actividad(Base):
@@ -254,6 +284,12 @@ class Actividad(Base):
     precio: Mapped[float | None] = mapped_column(Float)
     descripcion: Mapped[str | None] = mapped_column(String(255))
     proveedor_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_proveedores.id"))
+    fecha_creacion: Mapped[datetime | None] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    fecha_actualizacion: Mapped[datetime | None] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
+    )
 
 
 class Servicio(Base):
@@ -267,6 +303,12 @@ class Servicio(Base):
     estado: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     responsable_id: Mapped[int | None] = mapped_column(ForeignKey("intranet_usuarios.id"))
     descripcion: Mapped[str | None] = mapped_column(Text)
+    fecha_creacion: Mapped[datetime | None] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    fecha_actualizacion: Mapped[datetime | None] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
+    )
 
     responsable: Mapped["Usuario | None"] = relationship(back_populates="servicios")
     oportunidades: Mapped[list["Oportunidad"]] = relationship(back_populates="servicio")
