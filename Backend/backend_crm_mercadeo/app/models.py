@@ -19,13 +19,16 @@ class Etiqueta(Base):
 class ContactoEtiqueta(Base):
     __tablename__ = "mercadeo_crm_contacto_etiqueta"
 
-    contacto_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    contacto_id: Mapped[int] = mapped_column(
+        ForeignKey("mercadeo_crm_contactos.id"), primary_key=True
+    )
     etiqueta_id: Mapped[int] = mapped_column(
         ForeignKey("mercadeo_crm_etiquetas.id"), primary_key=True
     )
     usuario_id: Mapped[int] = mapped_column(Integer)
     fecha: Mapped[datetime] = mapped_column(DateTime)
 
+    contacto: Mapped["Contacto"] = relationship(back_populates="etiquetas")
     etiqueta: Mapped["Etiqueta"] = relationship(back_populates="contactos")
 
 
@@ -75,9 +78,27 @@ class CampanaSegmento(Base):
 # Modulo: Comercial (CRM Comercial)
 #
 # FKs internas: definidas aqui con ForeignKey.
-# FKs cross-modulo (usuarios, servicios, intranet_planliga): quedan como
-# columnas sin ForeignKey por ahora. Se agregan al final.
+# FKs cross-modulo (usuarios): quedan como columnas sin ForeignKey por
+# ahora. Se agregan al final.
+#
+# oportunidades.servicio_id -> mercadeo_crm_servicios.id se declara con
+# ForeignKey real (la clase Servicio vive en el modulo Servicios y
+# Proveedores, mas abajo en este mismo archivo).
+#
+# intranet_planliga es una tabla externa (modulo Integraciones) que ya
+# existe en la base de datos. Se mapea aqui de forma minima (solo el id)
+# para poder declarar FKs reales desde Oportunidad y Bitacora.
 # ---------------------------------------------------------------------------
+
+
+class PlanLiga(Base):
+    __tablename__ = "intranet_planliga"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    oportunidades: Mapped[list["Oportunidad"]] = relationship(back_populates="plan_liga_titular")
+    bitacoras: Mapped[list["Bitacora"]] = relationship(back_populates="titular")
+    titular_servicios: Mapped[list["TitularServicio"]] = relationship(back_populates="planliga")
 
 
 class Empresa(Base):
@@ -114,6 +135,8 @@ class Contacto(Base):
     empresa_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_empresas.id"))
     responsable_id: Mapped[int | None] = mapped_column(Integer)  # FK cross -> usuarios
 
+    etiquetas: Mapped[list["ContactoEtiqueta"]] = relationship(back_populates="contacto")
+
 
 class Embudo(Base):
     __tablename__ = "mercadeo_crm_embudos"
@@ -138,13 +161,16 @@ class Oportunidad(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     empresa_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_empresas.id"))
     contacto_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_contactos.id"))
-    servicio_id: Mapped[int | None] = mapped_column(Integer)  # FK cross -> mercadeo_crm_servicios
+    servicio_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_servicios.id"))
     etapa_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_etapas_embudo.id"))
     responsable_id: Mapped[int | None] = mapped_column(Integer)  # FK cross -> usuarios
     valor: Mapped[float | None] = mapped_column(Float)
     probabilidad: Mapped[float | None] = mapped_column(Float)
     estado: Mapped[str | None] = mapped_column(String(30))
-    plan_liga_titular_id: Mapped[int | None] = mapped_column(Integer)  # FK cross -> intranet_planliga
+    plan_liga_titular_id: Mapped[int | None] = mapped_column(ForeignKey("intranet_planliga.id"))
+
+    servicio: Mapped["Servicio | None"] = relationship(back_populates="oportunidades")
+    plan_liga_titular: Mapped["PlanLiga | None"] = relationship(back_populates="oportunidades")
 
 
 class Bitacora(Base):
@@ -155,13 +181,15 @@ class Bitacora(Base):
     contacto_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_contactos.id"))
     empresa_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_empresas.id"))
     oportunidad_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_oportunidades.id"))
-    titular_id: Mapped[int | None] = mapped_column(Integer)  # FK cross -> intranet_planliga
+    titular_id: Mapped[int | None] = mapped_column(ForeignKey("intranet_planliga.id"))
     tipo: Mapped[str | None] = mapped_column(String(50))
     descripcion: Mapped[str | None] = mapped_column(Text)
     proximo_paso: Mapped[str | None] = mapped_column(Text)
     fecha: Mapped[datetime | None] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc)
     )
+
+    titular: Mapped["PlanLiga | None"] = relationship(back_populates="bitacoras")
 
 
 # ---------------------------------------------------------------------------
@@ -170,14 +198,13 @@ class Bitacora(Base):
 # FKs internas (definidas aqui con ForeignKey):
 #   - actividad.proveedor_id -> proveedores.id     [1 proveedor : 0..* actividades]
 #   - titular_servicios.servicio_id -> servicios.id [1 servicio  : 0..* titular_servicios]
+#   - titular_servicios.planliga_id -> intranet_planliga.id [1 planliga : 0..* titular_servicios]
 #
 # FKs cross SALIENTES (columnas sin ForeignKey, se agregan al final):
 #   - servicios.responsable_id -> usuarios.id (Seguridad)
-#   - titular_servicios.planliga_id -> intranet_planliga.id (Integraciones)
 #
-# FKs cross ENTRANTES (declaradas en el otro modulo, informativas):
-#   - mercadeo_crm_oportunidades.servicio_id -> servicios.id  [1 a 0..*]
-#     (definida en el modulo Comercial, se agrega al final)
+# FKs cross ENTRANTES (declaradas en el modulo Comercial, informativas):
+#   - mercadeo_crm_oportunidades.servicio_id -> servicios.id  [1 servicio : 0..* oportunidades]
 # ---------------------------------------------------------------------------
 
 
@@ -216,18 +243,22 @@ class Servicio(Base):
     responsable_id: Mapped[int | None] = mapped_column(Integer)  # FK cross -> usuarios
     descripcion: Mapped[str | None] = mapped_column(Text)
 
+    oportunidades: Mapped[list["Oportunidad"]] = relationship(back_populates="servicio")
+
 
 class TitularServicio(Base):
     __tablename__ = "mercadeo_crm_titular_servicios"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    planliga_id: Mapped[int | None] = mapped_column(Integer)  # FK cross -> intranet_planliga
+    planliga_id: Mapped[int | None] = mapped_column(ForeignKey("intranet_planliga.id"))
     servicio_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_servicios.id"))
     fecha_asignacion: Mapped[datetime | None] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc)
     )
     estado: Mapped[str | None] = mapped_column(String(30))
     observaciones: Mapped[str | None] = mapped_column(Text)
+
+    planliga: Mapped["PlanLiga | None"] = relationship(back_populates="titular_servicios")
 
 
 class Importacion(Base):
