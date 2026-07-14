@@ -4,3 +4,4 @@ sqlalchemy
 alembic
 oracledb
 python-dotenv
+pydantic-settings

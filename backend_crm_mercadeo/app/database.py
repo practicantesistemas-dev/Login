@@ -1,33 +1,13 @@
-import os
+"""Shim de compatibilidad: la implementacion real vive en app.core.database
+(engine) y app.shared.database (Base declarativa, sessionmaker y get_db).
+Se mantiene este modulo para no romper imports existentes
+(alembic/env.py, scripts/seed_data.py, scripts/cleanup_data.py)."""
 
-from dotenv import load_dotenv
-from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from app.core.config import settings
+from app.core.database import engine
+from app.shared.database.base import Base
+from app.shared.database.session import SessionLocal, get_db
 
-load_dotenv()
+DATABASE_URL = settings.database_url
 
-DB_USER = os.getenv("SCSE_DB_USER")
-DB_PASSWORD = os.getenv("SCSE_DB_PASSWD")
-DB_HOST = os.getenv("SCSE_DB_IP", "localhost")
-DB_PORT = os.getenv("SCSE_DB_PORT", "1521")
-DB_SERVICE_NAME = os.getenv("SCSE_DB_DATABASE")
-
-DATABASE_URL = (
-    f"oracle+oracledb://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}"
-    f"/?service_name={DB_SERVICE_NAME}"
-)
-
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
-
-
-class Base(DeclarativeBase):
-    pass
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+__all__ = ["Base", "DATABASE_URL", "engine", "SessionLocal", "get_db"]

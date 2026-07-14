@@ -30,7 +30,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from app.database import SessionLocal
 from app.models import (
@@ -56,6 +56,37 @@ from app.models import (
 
 LOG_PATH = Path(__file__).resolve().parent / "seed_data_log.txt"
 
+# Orden de borrado: hijos antes que padres (inverso al orden de insercion).
+# Solo tablas propias de mercadeo_crm_*; intranet_usuarios e
+# intranet_planliga son externas y nunca se tocan.
+CLEANUP_MODELS = [
+    Importacion,
+    TitularServicio,
+    Bitacora,
+    Oportunidad,
+    CampanaSegmento,
+    Segmento,
+    Campana,
+    ContactoEtiqueta,
+    Etiqueta,
+    Contacto,
+    Empresa,
+    EtapaEmbudo,
+    Embudo,
+    Servicio,
+    Actividad,
+    Proveedor,
+]
+
+
+def cleanup(db, log) -> None:
+    log("Limpiando datos de prueba insertados en ejecuciones anteriores...")
+    for model in CLEANUP_MODELS:
+        result = db.execute(delete(model))
+        log(f"  {model.__tablename__}: {result.rowcount} fila(s) eliminada(s)")
+    db.commit()
+    log("")
+
 
 def main() -> None:
     db = SessionLocal()
@@ -69,6 +100,8 @@ def main() -> None:
         log("=== Seed de datos de prueba - CRM Mercadeo ===")
         log(f"Fecha de ejecucion: {datetime.now(timezone.utc).isoformat()}")
         log("")
+
+        cleanup(db, log)
 
         usuario_id = db.scalar(select(Usuario.id).order_by(Usuario.id).limit(1))
         planliga_id = db.scalar(select(PlanLiga.id).order_by(PlanLiga.id).limit(1))

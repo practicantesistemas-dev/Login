@@ -1,6 +1,17 @@
 from datetime import date, datetime, timezone
 
-from sqlalchemy import BigInteger, Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    CheckConstraint,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -103,6 +114,8 @@ class PlanLiga(Base):
     __tablename__ = "intranet_planliga"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    fecha_registro: Mapped[datetime | None] = mapped_column(DateTime)
+    estado: Mapped[str | None] = mapped_column(String(2))
 
     oportunidades: Mapped[list["Oportunidad"]] = relationship(back_populates="plan_liga_titular")
     bitacoras: Mapped[list["Bitacora"]] = relationship(back_populates="titular")
@@ -205,6 +218,11 @@ class Oportunidad(Base):
 
 class Bitacora(Base):
     __tablename__ = "mercadeo_crm_bitacora"
+    __table_args__ = (
+        CheckConstraint(
+            "estado IN ('pendiente', 'realizado')", name="ck_mercadeo_crm_bitacora_estado"
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     usuario_id: Mapped[int | None] = mapped_column(ForeignKey("intranet_usuarios.id"))
@@ -218,6 +236,7 @@ class Bitacora(Base):
     fecha: Mapped[datetime | None] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc)
     )
+    estado: Mapped[str] = mapped_column(String(20), nullable=False, default="pendiente")
 
     titular: Mapped["PlanLiga | None"] = relationship(back_populates="bitacoras")
     usuario: Mapped["Usuario | None"] = relationship(back_populates="bitacoras")
