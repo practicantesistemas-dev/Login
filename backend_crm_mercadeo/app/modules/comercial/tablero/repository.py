@@ -7,6 +7,7 @@ from app.models import (
     Bitacora,
     Contacto,
     Empresa,
+    EtapaEmbudo,
     Oportunidad,
     PlanLiga,
     Servicio,
@@ -115,6 +116,30 @@ class TableroRepository:
             *_rango(Contacto.fecha_creacion, desde, hasta),
         )
         return self.db.scalar(stmt) or 0
+
+    def embudo_comercial(
+        self,
+        embudo_id: int | None,
+        desde: datetime | None,
+        hasta: datetime | None,
+    ) -> list[tuple[EtapaEmbudo, int]]:
+        conteo = (
+            select(
+                Oportunidad.etapa_id.label("etapa_id"),
+                func.count(Oportunidad.id).label("total"),
+            )
+            .where(*_rango(Oportunidad.fecha_creacion, desde, hasta))
+            .group_by(Oportunidad.etapa_id)
+            .subquery()
+        )
+        stmt = (
+            select(EtapaEmbudo, func.coalesce(conteo.c.total, 0))
+            .outerjoin(conteo, conteo.c.etapa_id == EtapaEmbudo.id)
+            .order_by(EtapaEmbudo.embudo_id, EtapaEmbudo.orden)
+        )
+        if embudo_id is not None:
+            stmt = stmt.where(EtapaEmbudo.embudo_id == embudo_id)
+        return list(self.db.execute(stmt).all())
 
     def top_servicios(self, limit: int) -> list[tuple[Servicio, int]]:
         conteo = (

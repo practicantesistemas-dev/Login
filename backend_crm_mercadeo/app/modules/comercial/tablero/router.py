@@ -4,6 +4,7 @@ from app.modules.comercial.tablero.dependencies import get_tablero_service
 from app.modules.comercial.tablero.schemas import (
     ActividadRecienteItem,
     DistribucionContactos,
+    EtapaEmbudoItem,
     Periodo,
     ResumenDashboard,
     TopServicioItem,
@@ -39,6 +40,19 @@ def get_distribucion_contactos(
     service: TableroService = Depends(get_tablero_service),
 ) -> DistribucionContactos:
     return service.distribucion_contactos(periodo=periodo)
+
+
+@router.get("/embudo-comercial", response_model=list[EtapaEmbudoItem])
+def get_embudo_comercial(
+    embudo_id: int | None = Query(
+        None, description="Filtra por un embudo especifico; si se omite, trae todas las etapas"
+    ),
+    periodo: Periodo = Query(
+        "30d", description="7d, 30d, trimestre, anio o todo (sin filtro de fecha)"
+    ),
+    service: TableroService = Depends(get_tablero_service),
+) -> list[EtapaEmbudoItem]:
+    return service.embudo_comercial(embudo_id=embudo_id, periodo=periodo)
 
 
 @router.get("/top-servicios", response_model=list[TopServicioItem])

@@ -53,6 +53,7 @@ from app.models import (
     TitularServicio,
     Usuario,
 )
+from app.shared.enums import EtapaEmbudoNombre
 
 LOG_PATH = Path(__file__).resolve().parent / "seed_data_log.txt"
 
@@ -187,10 +188,33 @@ def main() -> None:
         db.add(embudo1)
         db.flush()
 
-        etapa1 = EtapaEmbudo(embudo_id=embudo1.id, nombre="Contacto inicial", orden=1)
-        etapa2 = EtapaEmbudo(embudo_id=embudo1.id, nombre="Propuesta enviada", orden=2)
-        etapa3 = EtapaEmbudo(embudo_id=embudo1.id, nombre="Cierre", orden=3)
-        db.add_all([etapa1, etapa2, etapa3])
+        etapa_lead = EtapaEmbudo(embudo_id=embudo1.id, nombre=EtapaEmbudoNombre.LEAD, orden=1)
+        etapa_primer_contacto = EtapaEmbudo(
+            embudo_id=embudo1.id, nombre=EtapaEmbudoNombre.PRIMER_CONTACTO, orden=2
+        )
+        etapa_reunion = EtapaEmbudo(
+            embudo_id=embudo1.id, nombre=EtapaEmbudoNombre.REUNION, orden=3
+        )
+        etapa_cotizacion = EtapaEmbudo(
+            embudo_id=embudo1.id, nombre=EtapaEmbudoNombre.COTIZACION, orden=4
+        )
+        etapa_negociacion = EtapaEmbudo(
+            embudo_id=embudo1.id, nombre=EtapaEmbudoNombre.NEGOCIACION, orden=5
+        )
+        etapa_ganada = EtapaEmbudo(embudo_id=embudo1.id, nombre=EtapaEmbudoNombre.GANADA, orden=6)
+        etapa_perdida = EtapaEmbudo(
+            embudo_id=embudo1.id, nombre=EtapaEmbudoNombre.PERDIDA, orden=7
+        )
+        etapas = [
+            etapa_lead,
+            etapa_primer_contacto,
+            etapa_reunion,
+            etapa_cotizacion,
+            etapa_negociacion,
+            etapa_ganada,
+            etapa_perdida,
+        ]
+        db.add_all(etapas)
         db.flush()
 
         # --- Empresas (responsable_id -> intranet_usuarios) --------------
@@ -339,7 +363,7 @@ def main() -> None:
             empresa_id=empresa1.id,
             contacto_id=contacto1.id,
             servicio_id=servicio1.id,
-            etapa_id=etapa1.id,
+            etapa_id=etapa_cotizacion.id,
             responsable_id=usuario_id,
             valor=3500000.0,
             probabilidad=70.0,
@@ -350,7 +374,7 @@ def main() -> None:
             empresa_id=empresa2.id,
             contacto_id=contacto2.id,
             servicio_id=servicio2.id,
-            etapa_id=etapa2.id,
+            etapa_id=etapa_primer_contacto.id,
             responsable_id=usuario_id,
             valor=1200000.0,
             probabilidad=40.0,
@@ -418,7 +442,7 @@ def main() -> None:
         # --- Refrescar para tener los ids generados por la BD -------------
         for obj in [
             proveedor1, proveedor2, actividad1, actividad2,
-            servicio1, servicio2, embudo1, etapa1, etapa2, etapa3,
+            servicio1, servicio2, embudo1, *etapas,
             empresa1, empresa2, contacto1, contacto2, contacto3,
             etiqueta1, etiqueta2, campana1, campana2, segmento1, segmento2,
             oportunidad1, oportunidad2, bitacora1, bitacora2,
@@ -435,9 +459,8 @@ def main() -> None:
         log(f"[mercadeo_crm_servicios]   id={servicio1.id} nombre={servicio1.nombre!r} responsable_id={servicio1.responsable_id}")
         log(f"[mercadeo_crm_servicios]   id={servicio2.id} nombre={servicio2.nombre!r} responsable_id={servicio2.responsable_id}")
         log(f"[mercadeo_crm_embudos]     id={embudo1.id} nombre={embudo1.nombre!r}")
-        log(f"[mercadeo_crm_etapas_embudo] id={etapa1.id} nombre={etapa1.nombre!r} embudo_id={etapa1.embudo_id}")
-        log(f"[mercadeo_crm_etapas_embudo] id={etapa2.id} nombre={etapa2.nombre!r} embudo_id={etapa2.embudo_id}")
-        log(f"[mercadeo_crm_etapas_embudo] id={etapa3.id} nombre={etapa3.nombre!r} embudo_id={etapa3.embudo_id}")
+        for etapa in etapas:
+            log(f"[mercadeo_crm_etapas_embudo] id={etapa.id} nombre={etapa.nombre!r} orden={etapa.orden} embudo_id={etapa.embudo_id}")
         log(f"[mercadeo_crm_empresas]    id={empresa1.id} razon_social={empresa1.razon_social!r} responsable_id={empresa1.responsable_id}")
         log(f"[mercadeo_crm_empresas]    id={empresa2.id} razon_social={empresa2.razon_social!r} responsable_id={empresa2.responsable_id}")
         log(f"[mercadeo_crm_contactos]   id={contacto1.id} nombre={contacto1.nombre1} {contacto1.apellido1} empresa_id={contacto1.empresa_id} responsable_id={contacto1.responsable_id}")

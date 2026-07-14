@@ -7,6 +7,7 @@ from app.modules.comercial.tablero.repository import TableroRepository
 from app.modules.comercial.tablero.schemas import (
     ActividadRecienteItem,
     DistribucionContactos,
+    EtapaEmbudoItem,
     IndicadorItem,
     KpiItem,
     Periodo,
@@ -89,6 +90,24 @@ class TableroService:
             prospectos_activos=item(r.contar_prospectos_activos(desde, ahora)),
             inactivos=item(r.contar_contactos_inactivos(desde, ahora)),
         )
+
+    def embudo_comercial(
+        self, embudo_id: int | None = None, periodo: Periodo = "30d"
+    ) -> list[EtapaEmbudoItem]:
+        ahora = datetime.now(timezone.utc)
+        desde = _inicio_periodo(periodo, ahora)
+
+        filas = self.repository.embudo_comercial(embudo_id, desde, ahora)
+        return [
+            EtapaEmbudoItem(
+                etapa_id=etapa.id,
+                embudo_id=etapa.embudo_id,
+                nombre=etapa.nombre,
+                orden=etapa.orden,
+                cantidad=cantidad,
+            )
+            for etapa, cantidad in filas
+        ]
 
     def top_servicios(self, limit: int = 4) -> list[TopServicioItem]:
         filas = self.repository.top_servicios(limit)

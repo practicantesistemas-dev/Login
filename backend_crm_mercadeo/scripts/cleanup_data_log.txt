@@ -1,0 +1,21 @@
+=== Limpieza de datos de prueba - CRM Mercadeo ===
+Fecha de ejecucion: 2026-07-14T21:58:43.140255+00:00
+
+  mercadeo_crm_importaciones: 1 fila(s) eliminada(s)
+  mercadeo_crm_titular_servicios: 2 fila(s) eliminada(s)
+  mercadeo_crm_bitacora: 2 fila(s) eliminada(s)
+  mercadeo_crm_oportunidades: 2 fila(s) eliminada(s)
+  mercadeo_crm_campana_segmento: 2 fila(s) eliminada(s)
+  mercadeo_crm_segmentos: 2 fila(s) eliminada(s)
+  mercadeo_crm_campanas: 2 fila(s) eliminada(s)
+  mercadeo_crm_contacto_etiqueta: 2 fila(s) eliminada(s)
+  mercadeo_crm_etiquetas: 2 fila(s) eliminada(s)
+  mercadeo_crm_contactos: 3 fila(s) eliminada(s)
+  mercadeo_crm_empresas: 2 fila(s) eliminada(s)
+  mercadeo_crm_etapas_embudo: 3 fila(s) eliminada(s)
+  mercadeo_crm_embudos: 1 fila(s) eliminada(s)
+  mercadeo_crm_servicios: 2 fila(s) eliminada(s)
+  mercadeo_crm_actividad: 2 fila(s) eliminada(s)
+  mercadeo_crm_proveedores: 2 fila(s) eliminada(s)
+
+Limpieza completada correctamente.

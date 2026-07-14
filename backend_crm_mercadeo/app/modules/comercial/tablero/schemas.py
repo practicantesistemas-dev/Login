@@ -50,3 +50,11 @@ class DistribucionContactos(BaseModel):
     clientes_activos: IndicadorItem
     prospectos_activos: IndicadorItem
     inactivos: IndicadorItem
+
+
+class EtapaEmbudoItem(BaseModel):
+    etapa_id: int
+    embudo_id: int | None = None
+    nombre: str
+    orden: int | None = None
+    cantidad: int

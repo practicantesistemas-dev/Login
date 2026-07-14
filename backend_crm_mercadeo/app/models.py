@@ -14,7 +14,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.shared.enums import EstadoBitacora, TipoContacto
+from app.shared.enums import EstadoBitacora, EtapaEmbudoNombre, TipoContacto
 
 from .database import Base
 
@@ -192,10 +192,17 @@ class Embudo(Base):
 
 class EtapaEmbudo(Base):
     __tablename__ = "mercadeo_crm_etapas_embudo"
+    __table_args__ = (
+        CheckConstraint(
+            "nombre IN ('Lead', 'Primer Contacto', 'Reunión', 'Cotización', "
+            "'Negociación', 'Ganada', 'Perdida')",
+            name="ck_mercadeo_crm_etapas_embudo_nombre",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     embudo_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_embudos.id"))
-    nombre: Mapped[str] = mapped_column(String(100), nullable=False)
+    nombre: Mapped[EtapaEmbudoNombre] = mapped_column(String(100), nullable=False)
     orden: Mapped[int | None] = mapped_column(Integer)
 
 

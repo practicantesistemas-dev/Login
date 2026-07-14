@@ -1,58 +1,62 @@
 === Seed de datos de prueba - CRM Mercadeo ===
-Fecha de ejecucion: 2026-07-14T14:18:50.863202+00:00
+Fecha de ejecucion: 2026-07-14T21:58:44.453154+00:00
 
 Limpiando datos de prueba insertados en ejecuciones anteriores...
-  mercadeo_crm_importaciones: 1 fila(s) eliminada(s)
-  mercadeo_crm_titular_servicios: 2 fila(s) eliminada(s)
-  mercadeo_crm_bitacora: 2 fila(s) eliminada(s)
-  mercadeo_crm_oportunidades: 2 fila(s) eliminada(s)
-  mercadeo_crm_campana_segmento: 2 fila(s) eliminada(s)
-  mercadeo_crm_segmentos: 2 fila(s) eliminada(s)
-  mercadeo_crm_campanas: 2 fila(s) eliminada(s)
-  mercadeo_crm_contacto_etiqueta: 2 fila(s) eliminada(s)
-  mercadeo_crm_etiquetas: 2 fila(s) eliminada(s)
-  mercadeo_crm_contactos: 3 fila(s) eliminada(s)
-  mercadeo_crm_empresas: 2 fila(s) eliminada(s)
-  mercadeo_crm_etapas_embudo: 3 fila(s) eliminada(s)
-  mercadeo_crm_embudos: 1 fila(s) eliminada(s)
-  mercadeo_crm_servicios: 2 fila(s) eliminada(s)
-  mercadeo_crm_actividad: 2 fila(s) eliminada(s)
-  mercadeo_crm_proveedores: 2 fila(s) eliminada(s)
+  mercadeo_crm_importaciones: 0 fila(s) eliminada(s)
+  mercadeo_crm_titular_servicios: 0 fila(s) eliminada(s)
+  mercadeo_crm_bitacora: 0 fila(s) eliminada(s)
+  mercadeo_crm_oportunidades: 0 fila(s) eliminada(s)
+  mercadeo_crm_campana_segmento: 0 fila(s) eliminada(s)
+  mercadeo_crm_segmentos: 0 fila(s) eliminada(s)
+  mercadeo_crm_campanas: 0 fila(s) eliminada(s)
+  mercadeo_crm_contacto_etiqueta: 0 fila(s) eliminada(s)
+  mercadeo_crm_etiquetas: 0 fila(s) eliminada(s)
+  mercadeo_crm_contactos: 0 fila(s) eliminada(s)
+  mercadeo_crm_empresas: 0 fila(s) eliminada(s)
+  mercadeo_crm_etapas_embudo: 0 fila(s) eliminada(s)
+  mercadeo_crm_embudos: 0 fila(s) eliminada(s)
+  mercadeo_crm_servicios: 0 fila(s) eliminada(s)
+  mercadeo_crm_actividad: 0 fila(s) eliminada(s)
+  mercadeo_crm_proveedores: 0 fila(s) eliminada(s)
 
 Usando intranet_usuarios.id = 0 para las relaciones de usuario.
 Usando intranet_planliga.id = 1 para las relaciones de titular.
 
 Insercion completada correctamente. Detalle de registros creados:
 
-[mercadeo_crm_proveedores] id=7 nombre='Proveedor Insumos Medicos SAS'
-[mercadeo_crm_proveedores] id=8 nombre='Eventos y Logistica LTDA'
-[mercadeo_crm_actividad]   id=7 nombre='Alquiler de stand' proveedor_id=7
-[mercadeo_crm_actividad]   id=8 nombre='Catering evento' proveedor_id=8
-[mercadeo_crm_servicios]   id=7 nombre='Consulta Oncologica General' responsable_id=0
-[mercadeo_crm_servicios]   id=8 nombre='Taller Prevencion Cancer de Mama' responsable_id=0
-[mercadeo_crm_embudos]     id=4 nombre='Embudo Comercial Servicios'
-[mercadeo_crm_etapas_embudo] id=10 nombre='Contacto inicial' embudo_id=4
-[mercadeo_crm_etapas_embudo] id=11 nombre='Propuesta enviada' embudo_id=4
-[mercadeo_crm_etapas_embudo] id=12 nombre='Cierre' embudo_id=4
-[mercadeo_crm_empresas]    id=6 razon_social='Clinica Vida Sana SAS' responsable_id=0
-[mercadeo_crm_empresas]    id=7 razon_social='Fundacion Bienestar Total' responsable_id=0
-[mercadeo_crm_contactos]   id=7 nombre=Laura Gomez empresa_id=6 responsable_id=0
-[mercadeo_crm_contactos]   id=8 nombre=Carlos Ramirez empresa_id=7 responsable_id=0
-[mercadeo_crm_contactos]   id=9 nombre=Maria Torres empresa_id=6 responsable_id=0
-[mercadeo_crm_etiquetas]   id=5 nombre='VIP'
-[mercadeo_crm_etiquetas]   id=6 nombre='Seguimiento'
-[mercadeo_crm_contacto_etiqueta] contacto_id=7 etiqueta_id=5 usuario_id=0
-[mercadeo_crm_contacto_etiqueta] contacto_id=8 etiqueta_id=6 usuario_id=0
-[mercadeo_crm_campanas]    id=5 nombre='Campana Prevencion Cancer 2026'
-[mercadeo_crm_campanas]    id=6 nombre='Campana Fidelizacion Clientes'
-[mercadeo_crm_segmentos]   id=5 nombre='Clientes Bogota' usuario_id=0
-[mercadeo_crm_segmentos]   id=6 nombre='Prospectos Activos' usuario_id=0
-[mercadeo_crm_campana_segmento] campana_id=5 segmento_id=5 usuario_id=0
-[mercadeo_crm_campana_segmento] campana_id=6 segmento_id=6 usuario_id=0
-[mercadeo_crm_oportunidades] id=5 empresa_id=6 contacto_id=7 servicio_id=7 responsable_id=0 plan_liga_titular_id=1
-[mercadeo_crm_oportunidades] id=6 empresa_id=7 contacto_id=8 servicio_id=8 responsable_id=0 plan_liga_titular_id=1
-[mercadeo_crm_bitacora]    id=5 tipo='Llamada' usuario_id=0 titular_id=1 oportunidad_id=5
-[mercadeo_crm_bitacora]    id=6 tipo='Reunion' usuario_id=0 titular_id=1 oportunidad_id=6
-[mercadeo_crm_titular_servicios] id=5 planliga_id=1 servicio_id=7
-[mercadeo_crm_titular_servicios] id=6 planliga_id=1 servicio_id=8
-[mercadeo_crm_importaciones] id=3 archivo='contactos_prueba.csv' usuario_id=0
+[mercadeo_crm_proveedores] id=9 nombre='Proveedor Insumos Medicos SAS'
+[mercadeo_crm_proveedores] id=10 nombre='Eventos y Logistica LTDA'
+[mercadeo_crm_actividad]   id=9 nombre='Alquiler de stand' proveedor_id=9
+[mercadeo_crm_actividad]   id=10 nombre='Catering evento' proveedor_id=10
+[mercadeo_crm_servicios]   id=9 nombre='Consulta Oncologica General' responsable_id=0
+[mercadeo_crm_servicios]   id=10 nombre='Taller Prevencion Cancer de Mama' responsable_id=0
+[mercadeo_crm_embudos]     id=5 nombre='Embudo Comercial Servicios'
+[mercadeo_crm_etapas_embudo] id=15 nombre='Lead' orden=1 embudo_id=5
+[mercadeo_crm_etapas_embudo] id=16 nombre='Primer Contacto' orden=2 embudo_id=5
+[mercadeo_crm_etapas_embudo] id=17 nombre='Reunión' orden=3 embudo_id=5
+[mercadeo_crm_etapas_embudo] id=18 nombre='Cotización' orden=4 embudo_id=5
+[mercadeo_crm_etapas_embudo] id=19 nombre='Negociación' orden=5 embudo_id=5
+[mercadeo_crm_etapas_embudo] id=20 nombre='Ganada' orden=6 embudo_id=5
+[mercadeo_crm_etapas_embudo] id=21 nombre='Perdida' orden=7 embudo_id=5
+[mercadeo_crm_empresas]    id=8 razon_social='Clinica Vida Sana SAS' responsable_id=0
+[mercadeo_crm_empresas]    id=9 razon_social='Fundacion Bienestar Total' responsable_id=0
+[mercadeo_crm_contactos]   id=11 nombre=Laura Gomez empresa_id=8 responsable_id=0
+[mercadeo_crm_contactos]   id=12 nombre=Carlos Ramirez empresa_id=9 responsable_id=0
+[mercadeo_crm_contactos]   id=13 nombre=Maria Torres empresa_id=8 responsable_id=0
+[mercadeo_crm_etiquetas]   id=7 nombre='VIP'
+[mercadeo_crm_etiquetas]   id=8 nombre='Seguimiento'
+[mercadeo_crm_contacto_etiqueta] contacto_id=11 etiqueta_id=7 usuario_id=0
+[mercadeo_crm_contacto_etiqueta] contacto_id=12 etiqueta_id=8 usuario_id=0
+[mercadeo_crm_campanas]    id=7 nombre='Campana Prevencion Cancer 2026'
+[mercadeo_crm_campanas]    id=8 nombre='Campana Fidelizacion Clientes'
+[mercadeo_crm_segmentos]   id=7 nombre='Clientes Bogota' usuario_id=0
+[mercadeo_crm_segmentos]   id=8 nombre='Prospectos Activos' usuario_id=0
+[mercadeo_crm_campana_segmento] campana_id=7 segmento_id=7 usuario_id=0
+[mercadeo_crm_campana_segmento] campana_id=8 segmento_id=8 usuario_id=0
+[mercadeo_crm_oportunidades] id=7 empresa_id=8 contacto_id=11 servicio_id=9 responsable_id=0 plan_liga_titular_id=1
+[mercadeo_crm_oportunidades] id=8 empresa_id=9 contacto_id=12 servicio_id=10 responsable_id=0 plan_liga_titular_id=1
+[mercadeo_crm_bitacora]    id=9 tipo='Llamada' usuario_id=0 titular_id=1 oportunidad_id=7
+[mercadeo_crm_bitacora]    id=10 tipo='Reunion' usuario_id=0 titular_id=1 oportunidad_id=8
+[mercadeo_crm_titular_servicios] id=7 planliga_id=1 servicio_id=9
+[mercadeo_crm_titular_servicios] id=8 planliga_id=1 servicio_id=10
+[mercadeo_crm_importaciones] id=4 archivo='contactos_prueba.csv' usuario_id=0
