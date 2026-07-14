@@ -1,14 +1,23 @@
 from datetime import datetime
 
-from sqlalchemy import ColumnElement, func, select
+from sqlalchemy import ColumnElement, func, or_, select
 from sqlalchemy.orm import Session
 
-from app.models import Bitacora, Contacto, Empresa, Oportunidad, PlanLiga, Servicio, TitularServicio
+from app.models import (
+    Bitacora,
+    Contacto,
+    Empresa,
+    Oportunidad,
+    PlanLiga,
+    Servicio,
+    TitularServicio,
+    Usuario,
+)
+from app.shared.enums import EstadoBitacora, TipoContacto
 
 ESTADOS_OPORTUNIDAD_CERRADOS = {"ganada", "ganado", "perdida", "perdido", "cerrada", "cerrado"}
 ESTADO_ACTIVO = "activo"
 ESTADO_PLANLIGA_ACTIVO = "A"
-ESTADO_BITACORA_PENDIENTE = "pendiente"
 
 
 def _rango(campo_fecha: ColumnElement, desde: datetime | None, hasta: datetime | None) -> list:
@@ -60,28 +69,52 @@ class TableroRepository:
 
     def contar_seguimientos_pendientes(self, desde: datetime | None, hasta: datetime | None) -> int:
         stmt = select(func.count()).select_from(Bitacora).where(
-            func.lower(Bitacora.estado) == ESTADO_BITACORA_PENDIENTE,
+            Bitacora.estado == EstadoBitacora.PENDIENTE,
             *_rango(Bitacora.fecha, desde, hasta),
         )
         return self.db.scalar(stmt) or 0
 
-    def actividad_reciente(self, limit: int) -> list[tuple[Bitacora, Contacto | None, Empresa | None]]:
+    def actividad_reciente(
+        self, limit: int
+    ) -> list[tuple[Bitacora, Contacto | None, Empresa | None, Usuario | None]]:
         stmt = (
-            select(Bitacora, Contacto, Empresa)
+            select(Bitacora, Contacto, Empresa, Usuario)
             .outerjoin(Contacto, Bitacora.contacto_id == Contacto.id)
             .outerjoin(Empresa, Bitacora.empresa_id == Empresa.id)
+            .outerjoin(Usuario, Bitacora.usuario_id == Usuario.id)
             .order_by(Bitacora.fecha.desc())
             .limit(limit)
         )
-        return [(row[0], row[1], row[2]) for row in self.db.execute(stmt).all()]
+        return [(row[0], row[1], row[2], row[3]) for row in self.db.execute(stmt).all()]
 
-    def distribucion_contactos(self) -> list[tuple[str | None, int]]:
-        stmt = (
-            select(Contacto.estado, func.count())
-            .group_by(Contacto.estado)
-            .order_by(func.count().desc())
+    def contar_total_contactos(self, desde: datetime | None, hasta: datetime | None) -> int:
+        stmt = select(func.count()).select_from(Contacto).where(
+            *_rango(Contacto.fecha_creacion, desde, hasta)
         )
-        return list(self.db.execute(stmt).all())
+        return self.db.scalar(stmt) or 0
+
+    def contar_contactos_inactivos(self, desde: datetime | None, hasta: datetime | None) -> int:
+        stmt = select(func.count()).select_from(Contacto).where(
+            or_(Contacto.estado.is_(None), func.lower(Contacto.estado) != ESTADO_ACTIVO),
+            *_rango(Contacto.fecha_creacion, desde, hasta),
+        )
+        return self.db.scalar(stmt) or 0
+
+    def contar_prospectos_activos(self, desde: datetime | None, hasta: datetime | None) -> int:
+        stmt = select(func.count()).select_from(Contacto).where(
+            Contacto.tipo_contacto == TipoContacto.PROSPECTO,
+            func.lower(Contacto.estado) == ESTADO_ACTIVO,
+            *_rango(Contacto.fecha_creacion, desde, hasta),
+        )
+        return self.db.scalar(stmt) or 0
+
+    def contar_clientes_activos(self, desde: datetime | None, hasta: datetime | None) -> int:
+        stmt = select(func.count()).select_from(Contacto).where(
+            Contacto.tipo_contacto == TipoContacto.CLIENTE,
+            func.lower(Contacto.estado) == ESTADO_ACTIVO,
+            *_rango(Contacto.fecha_creacion, desde, hasta),
+        )
+        return self.db.scalar(stmt) or 0
 
     def top_servicios(self, limit: int) -> list[tuple[Servicio, int]]:
         conteo = (

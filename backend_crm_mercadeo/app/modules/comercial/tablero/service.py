@@ -6,7 +6,8 @@ from app.models import Contacto
 from app.modules.comercial.tablero.repository import TableroRepository
 from app.modules.comercial.tablero.schemas import (
     ActividadRecienteItem,
-    DistribucionContactosItem,
+    DistribucionContactos,
+    IndicadorItem,
     KpiItem,
     Periodo,
     ResumenDashboard,
@@ -66,21 +67,28 @@ class TableroService:
                 empresa_id=bitacora.empresa_id,
                 empresa_nombre=empresa.razon_social if empresa else None,
                 usuario_id=bitacora.usuario_id,
+                usuario_nombre=usuario.nombres if usuario else None,
             )
-            for bitacora, contacto, empresa in filas
+            for bitacora, contacto, empresa, usuario in filas
         ]
 
-    def distribucion_contactos(self) -> list[DistribucionContactosItem]:
-        filas = self.repository.distribucion_contactos()
-        total = sum(cantidad for _, cantidad in filas)
-        return [
-            DistribucionContactosItem(
-                estado=estado or "Sin estado",
-                cantidad=cantidad,
-                porcentaje=round(cantidad / total * 100, 1) if total else 0.0,
-            )
-            for estado, cantidad in filas
-        ]
+    def distribucion_contactos(self, periodo: Periodo = "30d") -> DistribucionContactos:
+        ahora = datetime.now(timezone.utc)
+        desde = _inicio_periodo(periodo, ahora)
+
+        r = self.repository
+        total = r.contar_total_contactos(desde, ahora)
+
+        def item(cantidad: int) -> IndicadorItem:
+            porcentaje = round(cantidad / total * 100, 1) if total else 0.0
+            return IndicadorItem(cantidad=cantidad, porcentaje=porcentaje)
+
+        return DistribucionContactos(
+            total=total,
+            clientes_activos=item(r.contar_clientes_activos(desde, ahora)),
+            prospectos_activos=item(r.contar_prospectos_activos(desde, ahora)),
+            inactivos=item(r.contar_contactos_inactivos(desde, ahora)),
+        )
 
     def top_servicios(self, limit: int = 4) -> list[TopServicioItem]:
         filas = self.repository.top_servicios(limit)

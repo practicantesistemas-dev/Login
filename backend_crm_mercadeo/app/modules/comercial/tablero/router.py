@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Query
 from app.modules.comercial.tablero.dependencies import get_tablero_service
 from app.modules.comercial.tablero.schemas import (
     ActividadRecienteItem,
-    DistribucionContactosItem,
+    DistribucionContactos,
     Periodo,
     ResumenDashboard,
     TopServicioItem,
@@ -31,11 +31,14 @@ def get_actividad_reciente(
     return service.actividad_reciente(limit=limit)
 
 
-@router.get("/distribucion-contactos", response_model=list[DistribucionContactosItem])
+@router.get("/distribucion-contactos", response_model=DistribucionContactos)
 def get_distribucion_contactos(
+    periodo: Periodo = Query(
+        "30d", description="7d, 30d, trimestre, anio o todo (sin filtro de fecha)"
+    ),
     service: TableroService = Depends(get_tablero_service),
-) -> list[DistribucionContactosItem]:
-    return service.distribucion_contactos()
+) -> DistribucionContactos:
+    return service.distribucion_contactos(periodo=periodo)
 
 
 @router.get("/top-servicios", response_model=list[TopServicioItem])

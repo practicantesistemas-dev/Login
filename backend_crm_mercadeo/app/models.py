@@ -14,6 +14,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.shared.enums import EstadoBitacora, TipoContacto
+
 from .database import Base
 
 
@@ -145,9 +147,15 @@ class Empresa(Base):
 
 class Contacto(Base):
     __tablename__ = "mercadeo_crm_contactos"
+    __table_args__ = (
+        CheckConstraint(
+            "tipo_contacto IS NULL OR tipo_contacto IN ('Cliente', 'Prospecto')",
+            name="ck_mercadeo_crm_contactos_tipo_contacto",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    tipo_contacto: Mapped[str | None] = mapped_column(String(50))
+    tipo_contacto: Mapped[TipoContacto | None] = mapped_column(String(50))
     tipo_documento: Mapped[str | None] = mapped_column(String(20))
     documento: Mapped[str | None] = mapped_column(String(30))
     nombre1: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -236,7 +244,9 @@ class Bitacora(Base):
     fecha: Mapped[datetime | None] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc)
     )
-    estado: Mapped[str] = mapped_column(String(20), nullable=False, default="pendiente")
+    estado: Mapped[EstadoBitacora] = mapped_column(
+        String(20), nullable=False, default=EstadoBitacora.PENDIENTE
+    )
 
     titular: Mapped["PlanLiga | None"] = relationship(back_populates="bitacoras")
     usuario: Mapped["Usuario | None"] = relationship(back_populates="bitacoras")
@@ -265,6 +275,7 @@ class Usuario(Base):
     __tablename__ = "intranet_usuarios"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    nombres: Mapped[str | None] = mapped_column(String(50))
 
     servicios: Mapped[list["Servicio"]] = relationship(back_populates="responsable")
     importaciones: Mapped[list["Importacion"]] = relationship(back_populates="usuario")

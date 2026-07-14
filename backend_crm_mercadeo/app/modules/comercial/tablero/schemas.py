@@ -30,12 +30,7 @@ class ActividadRecienteItem(BaseModel):
     empresa_id: int | None = None
     empresa_nombre: str | None = None
     usuario_id: int | None = None
-
-
-class DistribucionContactosItem(BaseModel):
-    estado: str
-    cantidad: int
-    porcentaje: float
+    usuario_nombre: str | None = None
 
 
 class TopServicioItem(BaseModel):
@@ -43,3 +38,15 @@ class TopServicioItem(BaseModel):
     nombre: str
     solicitudes: int
     porcentaje: float
+
+
+class IndicadorItem(BaseModel):
+    cantidad: int
+    porcentaje: float
+
+
+class DistribucionContactos(BaseModel):
+    total: int
+    clientes_activos: IndicadorItem
+    prospectos_activos: IndicadorItem
+    inactivos: IndicadorItem
