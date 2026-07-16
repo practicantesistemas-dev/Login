@@ -1,5 +1,8 @@
 from sqlalchemy.orm import Session
 
+from app.modules.integraciones.titulares_beneficiarios.exceptions import (
+    TitularNotFoundError,
+)
 from app.modules.integraciones.titulares_beneficiarios.repository import (
     TitularesBeneficiariosRepository,
 )
@@ -7,6 +10,7 @@ from app.modules.integraciones.titulares_beneficiarios.schemas import (
     ListadoTitulares,
     PlanItem,
     ResumenTitularesBeneficiarios,
+    TitularDetalle,
 )
 
 
@@ -20,6 +24,12 @@ class TitularesBeneficiariosService:
             titulares_activos=r.contar_titulares_activos(),
             beneficiarios_activos=r.contar_beneficiarios_activos(),
         )
+
+    def obtener_titular(self, id_titular: int) -> TitularDetalle:
+        fila = self.repository.obtener_titular(id_titular)
+        if fila is None:
+            raise TitularNotFoundError(id_titular)
+        return TitularDetalle(**fila)
 
     def listar_titulares(
         self,
@@ -40,6 +50,7 @@ class TitularesBeneficiariosService:
                 CATEGORIA=servicio.categoria,
                 TIPO=servicio.tipo,
                 MAX_BENEFICIARIOS=servicio.max_beneficiarios,
+                BENEFICIARIOS_ADICIONALES=servicio.beneficiarios_adicionales,
                 DESCRIPCION=servicio.descripcion,
                 ESTADO=servicio.estado,
             )

@@ -159,25 +159,75 @@ def main() -> None:
         db.add_all([actividad1, actividad2])
 
         # --- Servicios (responsable_id -> intranet_usuarios) ------------
+        # Plan Liga es un unico servicio; sus variantes (particulares y
+        # empresariales) se representan como categorias de ese mismo servicio.
         servicio1 = Servicio(
-            nombre="Consulta Oncologica General",
-            categoria="Consulta",
-            tipo="Presencial",
-            max_beneficiarios=1,
+            nombre="Plan Liga",
+            categoria="6 Beneficiarios",
+            tipo="Particular",
+            max_beneficiarios=6,
             estado=True,
-            descripcion="Consulta con especialista en oncologia",
+            descripcion="Plan Liga particular con 6 beneficiarios y un titular",
             responsable_id=usuario_id,
         )
         servicio2 = Servicio(
-            nombre="Taller Prevencion Cancer de Mama",
-            categoria="Taller",
-            tipo="Grupal",
-            max_beneficiarios=30,
+            nombre="Plan Liga",
+            categoria="Dos Adicionales",
+            tipo="Particular",
+            beneficiarios_adicionales=2,
             estado=True,
-            descripcion="Taller educativo de prevencion",
+            descripcion="Plan Liga particular: suma dos beneficiarios adicionales al plan base",
             responsable_id=usuario_id,
         )
-        db.add_all([servicio1, servicio2])
+        servicio3 = Servicio(
+            nombre="Plan Liga",
+            categoria="Empresarial Individual",
+            tipo="Empresarial",
+            max_beneficiarios=1,
+            estado=True,
+            descripcion="Plan Liga empresarial individual",
+            responsable_id=usuario_id,
+        )
+        servicio4 = Servicio(
+            nombre="Plan Liga",
+            categoria="Empresarial x3",
+            tipo="Empresarial",
+            max_beneficiarios=3,
+            estado=True,
+            descripcion="Plan Liga empresarial para 3 beneficiarios",
+            responsable_id=usuario_id,
+        )
+        servicio5 = Servicio(
+            nombre="Plan Liga",
+            categoria="5 Beneficiarios",
+            tipo="Particular",
+            max_beneficiarios=5,
+            estado=True,
+            descripcion="Plan Liga particular con 5 beneficiarios y un titular",
+            responsable_id=usuario_id,
+        )
+        servicio6 = Servicio(
+            nombre="Plan Liga",
+            categoria="Empresarial 1 Adicional",
+            tipo="Empresarial",
+            beneficiarios_adicionales=1,
+            estado=True,
+            descripcion="Plan Liga empresarial: suma 1 beneficiario adicional al plan base",
+            responsable_id=usuario_id,
+        )
+        servicio7 = Servicio(
+            nombre="Plan Liga",
+            categoria="1 Adicional",
+            tipo="Particular",
+            beneficiarios_adicionales=1,
+            estado=True,
+            descripcion="Plan Liga particular: suma 1 beneficiario adicional al plan base",
+            responsable_id=usuario_id,
+        )
+        servicios_plan_liga = [
+            servicio1, servicio2, servicio3, servicio4, servicio5, servicio6, servicio7,
+        ]
+        db.add_all(servicios_plan_liga)
         db.flush()
 
         # --- Embudos y Etapas --------------------------------------------
@@ -442,7 +492,7 @@ def main() -> None:
         # --- Refrescar para tener los ids generados por la BD -------------
         for obj in [
             proveedor1, proveedor2, actividad1, actividad2,
-            servicio1, servicio2, embudo1, *etapas,
+            *servicios_plan_liga, embudo1, *etapas,
             empresa1, empresa2, contacto1, contacto2, contacto3,
             etiqueta1, etiqueta2, campana1, campana2, segmento1, segmento2,
             oportunidad1, oportunidad2, bitacora1, bitacora2,
@@ -456,8 +506,8 @@ def main() -> None:
         log(f"[mercadeo_crm_proveedores] id={proveedor2.id} nombre={proveedor2.nombre!r}")
         log(f"[mercadeo_crm_actividad]   id={actividad1.id} nombre={actividad1.nombre!r} proveedor_id={actividad1.proveedor_id}")
         log(f"[mercadeo_crm_actividad]   id={actividad2.id} nombre={actividad2.nombre!r} proveedor_id={actividad2.proveedor_id}")
-        log(f"[mercadeo_crm_servicios]   id={servicio1.id} nombre={servicio1.nombre!r} responsable_id={servicio1.responsable_id}")
-        log(f"[mercadeo_crm_servicios]   id={servicio2.id} nombre={servicio2.nombre!r} responsable_id={servicio2.responsable_id}")
+        for servicio in servicios_plan_liga:
+            log(f"[mercadeo_crm_servicios]   id={servicio.id} nombre={servicio.nombre!r} categoria={servicio.categoria!r} tipo={servicio.tipo!r} max_beneficiarios={servicio.max_beneficiarios} beneficiarios_adicionales={servicio.beneficiarios_adicionales} responsable_id={servicio.responsable_id}")
         log(f"[mercadeo_crm_embudos]     id={embudo1.id} nombre={embudo1.nombre!r}")
         for etapa in etapas:
             log(f"[mercadeo_crm_etapas_embudo] id={etapa.id} nombre={etapa.nombre!r} orden={etapa.orden} embudo_id={etapa.embudo_id}")

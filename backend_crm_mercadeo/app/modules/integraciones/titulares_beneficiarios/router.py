@@ -7,6 +7,7 @@ from app.modules.integraciones.titulares_beneficiarios.schemas import (
     ListadoTitulares,
     PlanItem,
     ResumenTitularesBeneficiarios,
+    TitularDetalle,
 )
 from app.modules.integraciones.titulares_beneficiarios.service import (
     TitularesBeneficiariosService,
@@ -46,3 +47,11 @@ def get_nombres_planes(
     service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
 ) -> list[str]:
     return service.listar_nombres_planes()
+
+
+@router.get("/{id_titular}", response_model=TitularDetalle)
+def get_titular(
+    id_titular: int,
+    service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
+) -> TitularDetalle:
+    return service.obtener_titular(id_titular)

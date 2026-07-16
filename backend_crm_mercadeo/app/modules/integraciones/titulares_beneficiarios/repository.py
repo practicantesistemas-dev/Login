@@ -30,6 +30,38 @@ class TitularesBeneficiariosRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
+    def obtener_titular(self, id_titular: int) -> dict | None:
+        stmt = select(
+            PlanLiga.id.label("ID_TITULAR"),
+            PlanLiga.documento.label("DOCUMENTO"),
+            PlanLiga.tipo.label("TIPO_DOCUMENTO"),
+            PlanLiga.nombre1.label("NOMBRE1"),
+            PlanLiga.nombre2.label("NOMBRE2"),
+            PlanLiga.apellido1.label("APELLIDO1"),
+            PlanLiga.apellido2.label("APELLIDO2"),
+            func.to_char(PlanLiga.fecha_nacimiento, "YYYY-MM-DD").label(
+                "FECHA_NACIMIENTO"
+            ),
+            PlanLiga.sexo.label("SEXO"),
+            PlanLiga.correo.label("CORREO"),
+            PlanLiga.telefono.label("TELEFONO"),
+            PlanLiga.direccion.label("DIRECCION"),
+            PlanLiga.ciudad.label("CIUDAD"),
+            PlanLiga.departamento.label("DEPARTAMENTO"),
+            PlanLiga.tipo_plan.label("TIPO_PLAN"),
+            PlanLiga.tipo_afiliado.label("TIPO_AFILIADO"),
+            PlanLiga.empresa.label("EMPRESA"),
+            PlanLiga.eps.label("EPS"),
+            PlanLiga.otraeps.label("OTRAEPS"),
+            PlanLiga.plan_salud.label("PLAN_SALUD"),
+            PlanLiga.plan_nombre.label("PLAN_NOMBRE"),
+            PlanLiga.estado.label("ESTADO"),
+            func.to_char(PlanLiga.fecha_ingreso, "YYYY-MM-DD").label("FECHA_INGRESO"),
+        ).where(PlanLiga.id == id_titular)
+
+        fila = self.db.execute(stmt).mappings().first()
+        return dict(fila) if fila is not None else None
+
     def listar_planes(self) -> list[Servicio]:
         stmt = select(Servicio).order_by(Servicio.nombre)
         return list(self.db.scalars(stmt))
@@ -92,6 +124,9 @@ class TitularesBeneficiariosRepository:
             .scalar_subquery(),
             0,
         )
+        cupo_plan = func.coalesce(Servicio.max_beneficiarios, 0) + func.coalesce(
+            Servicio.beneficiarios_adicionales, 0
+        )
 
         stmt = (
             select(
@@ -114,7 +149,7 @@ class TitularesBeneficiariosRepository:
                 func.listagg(
                     cast(conteo_beneficiarios, String(50))
                     + literal_column("'/'")
-                    + cast(Servicio.max_beneficiarios, String(50)),
+                    + cast(cupo_plan, String(50)),
                     literal_column("' | '"),
                 )
                 .within_group(Servicio.nombre)
