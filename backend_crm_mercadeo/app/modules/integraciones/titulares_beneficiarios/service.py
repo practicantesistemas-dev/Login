@@ -46,8 +46,11 @@ class TitularesBeneficiariosService:
         return [
             PlanItem(
                 ID=servicio.id,
-                NOMBRE=servicio.nombre,
-                CATEGORIA=servicio.categoria,
+                NOMBRE=(
+                    f"{servicio.nombre} - {servicio.categoria}"
+                    if servicio.categoria
+                    else servicio.nombre
+                ),
                 TIPO=servicio.tipo,
                 MAX_BENEFICIARIOS=servicio.max_beneficiarios,
                 BENEFICIARIOS_ADICIONALES=servicio.beneficiarios_adicionales,

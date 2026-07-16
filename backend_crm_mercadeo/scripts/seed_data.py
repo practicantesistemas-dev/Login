@@ -460,6 +460,8 @@ def main() -> None:
         db.add_all([bitacora1, bitacora2])
 
         # --- Titular de servicios (planliga_id, servicio_id) --------------
+        # Un titular no puede tener asignada mas de una variante de un mismo
+        # servicio (Plan Liga es un unico servicio); se le asigna una sola.
         titular_servicio1 = TitularServicio(
             planliga_id=planliga_id,
             servicio_id=servicio1.id,
@@ -467,14 +469,7 @@ def main() -> None:
             estado="Activo",
             observaciones="Asignacion de prueba",
         )
-        titular_servicio2 = TitularServicio(
-            planliga_id=planliga_id,
-            servicio_id=servicio2.id,
-            fecha_asignacion=ahora,
-            estado="Activo",
-            observaciones="Asignacion de prueba 2",
-        )
-        db.add_all([titular_servicio1, titular_servicio2])
+        db.add(titular_servicio1)
 
         # --- Importaciones (usuario_id) ------------------------------------
         importacion1 = Importacion(
@@ -496,7 +491,7 @@ def main() -> None:
             empresa1, empresa2, contacto1, contacto2, contacto3,
             etiqueta1, etiqueta2, campana1, campana2, segmento1, segmento2,
             oportunidad1, oportunidad2, bitacora1, bitacora2,
-            titular_servicio1, titular_servicio2, importacion1,
+            titular_servicio1, importacion1,
         ]:
             db.refresh(obj)
 
@@ -531,7 +526,6 @@ def main() -> None:
         log(f"[mercadeo_crm_bitacora]    id={bitacora1.id} tipo={bitacora1.tipo!r} usuario_id={bitacora1.usuario_id} titular_id={bitacora1.titular_id} oportunidad_id={bitacora1.oportunidad_id}")
         log(f"[mercadeo_crm_bitacora]    id={bitacora2.id} tipo={bitacora2.tipo!r} usuario_id={bitacora2.usuario_id} titular_id={bitacora2.titular_id} oportunidad_id={bitacora2.oportunidad_id}")
         log(f"[mercadeo_crm_titular_servicios] id={titular_servicio1.id} planliga_id={titular_servicio1.planliga_id} servicio_id={titular_servicio1.servicio_id}")
-        log(f"[mercadeo_crm_titular_servicios] id={titular_servicio2.id} planliga_id={titular_servicio2.planliga_id} servicio_id={titular_servicio2.servicio_id}")
         log(f"[mercadeo_crm_importaciones] id={importacion1.id} archivo={importacion1.archivo!r} usuario_id={importacion1.usuario_id}")
 
     except Exception:

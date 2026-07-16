@@ -9,7 +9,6 @@ class ResumenTitularesBeneficiarios(BaseModel):
 class PlanItem(BaseModel):
     ID: int
     NOMBRE: str
-    CATEGORIA: Optional[str] = None
     TIPO: Optional[str] = None
     MAX_BENEFICIARIOS: Optional[int] = None
     BENEFICIARIOS_ADICIONALES: Optional[int] = None

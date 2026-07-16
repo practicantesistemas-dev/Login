@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy import String, cast, func, literal_column, select
+from sqlalchemy import ColumnElement, String, case, cast, func, literal_column, select
 from sqlalchemy.orm import Session
 
 from app.models import PlanLiga, PlanLigaBeneficiario, Servicio, TitularServicio
@@ -24,6 +24,14 @@ def _rango_fecha_nacimiento(edad: str, hoy: date) -> tuple[date | None, date | N
         hoy.replace(year=hoy.year - edad_max - 1) if edad_max is not None else None
     )
     return fecha_nacimiento_min, fecha_nacimiento_max
+
+
+def _nombre_plan() -> ColumnElement:
+    """Nombre del servicio + su categoria (ej. 'Plan Liga - 6 Beneficiarios')."""
+    return Servicio.nombre + case(
+        (Servicio.categoria.isnot(None), literal_column("' - '") + Servicio.categoria),
+        else_=literal_column("''"),
+    )
 
 
 class TitularesBeneficiariosRepository:
@@ -67,7 +75,7 @@ class TitularesBeneficiariosRepository:
         return list(self.db.scalars(stmt))
 
     def listar_nombres_planes(self) -> list[str]:
-        stmt = select(Servicio.nombre).order_by(Servicio.nombre)
+        stmt = select(_nombre_plan()).order_by(Servicio.nombre, Servicio.categoria)
         return list(self.db.scalars(stmt))
 
     def contar_titulares_activos(self) -> int:
@@ -103,7 +111,7 @@ class TitularesBeneficiariosRepository:
                 .join(Servicio, Servicio.id == TitularServicio.servicio_id)
                 .where(
                     TitularServicio.planliga_id == PlanLiga.id,
-                    func.lower(Servicio.nombre) == plan.lower(),
+                    func.lower(_nombre_plan()) == plan.lower(),
                 )
                 .exists()
             )
@@ -143,8 +151,8 @@ class TitularesBeneficiariosRepository:
                 PlanLiga.documento.label("DOCUMENTO"),
                 PlanLiga.tipo.label("TIPO_DOCUMENTO"),
                 PlanLiga.empresa.label("EMPRESA"),
-                func.listagg(Servicio.nombre, literal_column("' | '"))
-                .within_group(Servicio.nombre)
+                func.listagg(_nombre_plan(), literal_column("' | '"))
+                .within_group(Servicio.nombre, Servicio.categoria)
                 .label("PLANES"),
                 func.listagg(
                     cast(conteo_beneficiarios, String(50))
