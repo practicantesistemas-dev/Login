@@ -118,10 +118,30 @@ class PlanLiga(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     fecha_registro: Mapped[datetime | None] = mapped_column(DateTime)
     estado: Mapped[str | None] = mapped_column(String(2))
+    nombre1: Mapped[str | None] = mapped_column(String(20))
+    nombre2: Mapped[str | None] = mapped_column(String(20))
+    apellido1: Mapped[str | None] = mapped_column(String(20))
+    apellido2: Mapped[str | None] = mapped_column(String(20))
+    documento: Mapped[str | None] = mapped_column(String(20))
+    tipo: Mapped[str | None] = mapped_column(String(2))
+    empresa: Mapped[str | None] = mapped_column(String(100))
+    correo: Mapped[str | None] = mapped_column(String(200))
+    telefono: Mapped[str | None] = mapped_column(String(15))
+    fecha_ingreso: Mapped[date | None] = mapped_column(Date)
+    fecha_nacimiento: Mapped[date | None] = mapped_column(Date)
+    sexo: Mapped[str | None] = mapped_column(String(1))
 
     oportunidades: Mapped[list["Oportunidad"]] = relationship(back_populates="plan_liga_titular")
     bitacoras: Mapped[list["Bitacora"]] = relationship(back_populates="titular")
     titular_servicios: Mapped[list["TitularServicio"]] = relationship(back_populates="planliga")
+
+
+class PlanLigaBeneficiario(Base):
+    __tablename__ = "intranet_planliga_beneficiario"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    estado: Mapped[str | None] = mapped_column(String(2))
+    planliga_id: Mapped[int | None] = mapped_column(Integer)
 
 
 class Empresa(Base):
