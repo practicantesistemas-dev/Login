@@ -50,8 +50,8 @@ class ListadoTitulares(BaseModel):
     TIPO_DOCUMENTO: Optional[str] = None
     DOCUMENTO: str
     EMPRESA: Optional[str] = None
-    PLANES: str
-    BENEFICIARIOS: str
+    PLANES: Optional[str] = None
+    BENEFICIARIOS: Optional[str] = None
     INSCRIPCION: Optional[str] = None
     ESTADO: str
 
@@ -61,3 +61,23 @@ class ListadoTitularesPaginado(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class BeneficiarioDetalle(BaseModel):
+    ID: int
+    TIPO_DOCUMENTO: Optional[str] = None
+    DOCUMENTO: Optional[str] = None
+    NOMBRE1: Optional[str] = None
+    NOMBRE2: Optional[str] = None
+    APELLIDO1: Optional[str] = None
+    APELLIDO2: Optional[str] = None
+    FECHA_NACIMIENTO: Optional[str] = None
+    SEXO: Optional[str] = None
+    DIRECCION: Optional[str] = None
+    CIUDAD: Optional[str] = None
+    DEPARTAMENTO: Optional[str] = None
+    CORREO: Optional[str] = None
+    TELEFONO: Optional[str] = None
+    FECHA_INGRESO: Optional[str] = None
+    EMPRESA: Optional[str] = None
+    ESTADO: Optional[str] = None

@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy import ColumnElement, String, case, cast, func, literal_column, select
+from sqlalchemy import ColumnElement, String, case, cast, func, literal_column, or_, select
 from sqlalchemy.orm import Session
 
 from app.models import PlanLiga, PlanLigaBeneficiario, Servicio, TitularServicio
@@ -70,6 +70,37 @@ class TitularesBeneficiariosRepository:
         fila = self.db.execute(stmt).mappings().first()
         return dict(fila) if fila is not None else None
 
+    def listar_beneficiarios(self, id_titular: int) -> list[dict]:
+        stmt = (
+            select(
+                PlanLigaBeneficiario.id.label("ID"),
+                PlanLigaBeneficiario.tipo.label("TIPO_DOCUMENTO"),
+                PlanLigaBeneficiario.documento.label("DOCUMENTO"),
+                PlanLigaBeneficiario.nombre1.label("NOMBRE1"),
+                PlanLigaBeneficiario.nombre2.label("NOMBRE2"),
+                PlanLigaBeneficiario.apellido1.label("APELLIDO1"),
+                PlanLigaBeneficiario.apellido2.label("APELLIDO2"),
+                func.to_char(PlanLigaBeneficiario.fecha_nacimiento, "YYYY-MM-DD").label(
+                    "FECHA_NACIMIENTO"
+                ),
+                PlanLigaBeneficiario.sexo.label("SEXO"),
+                PlanLigaBeneficiario.direccion.label("DIRECCION"),
+                PlanLigaBeneficiario.ciudad.label("CIUDAD"),
+                PlanLigaBeneficiario.departamento.label("DEPARTAMENTO"),
+                PlanLigaBeneficiario.correo.label("CORREO"),
+                PlanLigaBeneficiario.telefono.label("TELEFONO"),
+                func.to_char(PlanLigaBeneficiario.fecha_ingreso, "YYYY-MM-DD").label(
+                    "FECHA_INGRESO"
+                ),
+                PlanLigaBeneficiario.empresa.label("EMPRESA"),
+                PlanLigaBeneficiario.estado.label("ESTADO"),
+            )
+            .where(PlanLigaBeneficiario.planliga_id == id_titular)
+            .order_by(PlanLigaBeneficiario.orden, PlanLigaBeneficiario.id)
+        )
+
+        return [dict(row) for row in self.db.execute(stmt).mappings().all()]
+
     def listar_planes(self) -> list[Servicio]:
         stmt = select(Servicio).order_by(Servicio.nombre)
         return list(self.db.scalars(stmt))
@@ -96,7 +127,13 @@ class TitularesBeneficiariosRepository:
         plan: str | None = None,
         sexo: str | None = None,
         edad: str | None = None,
+        busqueda: str | None = None,
     ) -> list[ColumnElement]:
+        estado = None if estado and estado.strip().lower() == "todos" else estado
+        plan = None if plan and plan.strip().lower() == "todos" else plan
+        sexo = None if sexo and sexo.strip().lower() == "todos" else sexo
+        edad = None if edad and edad.strip().lower() == "todos" else edad
+
         condiciones = []
 
         if estado:
@@ -124,6 +161,26 @@ class TitularesBeneficiariosRepository:
             if fecha_min is not None:
                 condiciones.append(PlanLiga.fecha_nacimiento > fecha_min)
 
+        if busqueda and busqueda.strip():
+            termino = f"%{busqueda.strip().upper()}%"
+            nombre_completo = (
+                func.coalesce(PlanLiga.nombre1, "")
+                + literal_column("' '")
+                + func.coalesce(PlanLiga.nombre2, "")
+                + literal_column("' '")
+                + func.coalesce(PlanLiga.apellido1, "")
+                + literal_column("' '")
+                + func.coalesce(PlanLiga.apellido2, "")
+            )
+            condiciones.append(
+                or_(
+                    func.upper(nombre_completo).like(termino),
+                    func.upper(func.coalesce(PlanLiga.documento, "")).like(termino),
+                    func.upper(func.coalesce(PlanLiga.empresa, "")).like(termino),
+                    func.upper(func.coalesce(PlanLiga.correo, "")).like(termino),
+                )
+            )
+
         return condiciones
 
     def contar_titulares(
@@ -132,14 +189,15 @@ class TitularesBeneficiariosRepository:
         plan: str | None = None,
         sexo: str | None = None,
         edad: str | None = None,
+        busqueda: str | None = None,
     ) -> int:
-        condiciones = self._construir_condiciones(estado, plan, sexo, edad)
+        condiciones = self._construir_condiciones(estado, plan, sexo, edad, busqueda)
 
         stmt = (
             select(func.count(func.distinct(PlanLiga.id)))
             .select_from(PlanLiga)
-            .join(TitularServicio, TitularServicio.planliga_id == PlanLiga.id)
-            .join(Servicio, Servicio.id == TitularServicio.servicio_id)
+            .outerjoin(TitularServicio, TitularServicio.planliga_id == PlanLiga.id)
+            .outerjoin(Servicio, Servicio.id == TitularServicio.servicio_id)
             .where(*condiciones)
         )
         return self.db.scalar(stmt) or 0
@@ -152,8 +210,9 @@ class TitularesBeneficiariosRepository:
         plan: str | None = None,
         sexo: str | None = None,
         edad: str | None = None,
+        busqueda: str | None = None,
     ) -> list[dict]:
-        condiciones = self._construir_condiciones(estado, plan, sexo, edad)
+        condiciones = self._construir_condiciones(estado, plan, sexo, edad, busqueda)
 
         conteo_beneficiarios = func.coalesce(
             select(func.count())
@@ -198,8 +257,8 @@ class TitularesBeneficiariosRepository:
                 PlanLiga.estado.label("ESTADO"),
             )
             .select_from(PlanLiga)
-            .join(TitularServicio, TitularServicio.planliga_id == PlanLiga.id)
-            .join(Servicio, Servicio.id == TitularServicio.servicio_id)
+            .outerjoin(TitularServicio, TitularServicio.planliga_id == PlanLiga.id)
+            .outerjoin(Servicio, Servicio.id == TitularServicio.servicio_id)
             .where(*condiciones)
             .group_by(
                 PlanLiga.id,

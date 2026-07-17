@@ -7,6 +7,7 @@ from app.modules.integraciones.titulares_beneficiarios.repository import (
     TitularesBeneficiariosRepository,
 )
 from app.modules.integraciones.titulares_beneficiarios.schemas import (
+    BeneficiarioDetalle,
     ListadoTitulares,
     ListadoTitularesPaginado,
     PlanItem,
@@ -32,6 +33,12 @@ class TitularesBeneficiariosService:
             raise TitularNotFoundError(id_titular)
         return TitularDetalle(**fila)
 
+    def listar_beneficiarios(self, id_titular: int) -> list[BeneficiarioDetalle]:
+        if self.repository.obtener_titular(id_titular) is None:
+            raise TitularNotFoundError(id_titular)
+        filas = self.repository.listar_beneficiarios(id_titular)
+        return [BeneficiarioDetalle(**fila) for fila in filas]
+
     def listar_titulares(
         self,
         limit: int = 6,
@@ -40,9 +47,12 @@ class TitularesBeneficiariosService:
         plan: str | None = None,
         sexo: str | None = None,
         edad: str | None = None,
+        busqueda: str | None = None,
     ) -> ListadoTitularesPaginado:
-        filas = self.repository.listar_titulares(limit, offset, estado, plan, sexo, edad)
-        total = self.repository.contar_titulares(estado, plan, sexo, edad)
+        filas = self.repository.listar_titulares(
+            limit, offset, estado, plan, sexo, edad, busqueda
+        )
+        total = self.repository.contar_titulares(estado, plan, sexo, edad, busqueda)
         return ListadoTitularesPaginado(
             items=[ListadoTitulares(**fila) for fila in filas],
             total=total,

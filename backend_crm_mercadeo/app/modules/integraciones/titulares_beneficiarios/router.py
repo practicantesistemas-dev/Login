@@ -4,6 +4,7 @@ from app.modules.integraciones.titulares_beneficiarios.dependencies import (
     get_titulares_beneficiarios_service,
 )
 from app.modules.integraciones.titulares_beneficiarios.schemas import (
+    BeneficiarioDetalle,
     ListadoTitularesPaginado,
     PlanItem,
     ResumenTitularesBeneficiarios,
@@ -31,9 +32,10 @@ def get_listado(
     plan: str | None = None,
     sexo: str | None = None,
     edad: str | None = None,
+    busqueda: str | None = None,
     service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
 ) -> ListadoTitularesPaginado:
-    return service.listar_titulares(limit, offset, estado, plan, sexo, edad)
+    return service.listar_titulares(limit, offset, estado, plan, sexo, edad, busqueda)
 
 
 @router.get("/planes", response_model=list[PlanItem])
@@ -48,6 +50,14 @@ def get_nombres_planes(
     service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
 ) -> list[str]:
     return service.listar_nombres_planes()
+
+
+@router.get("/{id_titular}/beneficiarios", response_model=list[BeneficiarioDetalle])
+def get_beneficiarios(
+    id_titular: int,
+    service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
+) -> list[BeneficiarioDetalle]:
+    return service.listar_beneficiarios(id_titular)
 
 
 @router.get("/{id_titular}", response_model=TitularDetalle)
