@@ -4,7 +4,7 @@ from app.modules.integraciones.titulares_beneficiarios.dependencies import (
     get_titulares_beneficiarios_service,
 )
 from app.modules.integraciones.titulares_beneficiarios.schemas import (
-    ListadoTitulares,
+    ListadoTitularesPaginado,
     PlanItem,
     ResumenTitularesBeneficiarios,
     TitularDetalle,
@@ -23,16 +23,17 @@ def get_resumen(
     return service.resumen()
 
 
-@router.get("/listado", response_model=list[ListadoTitulares])
+@router.get("/listado", response_model=ListadoTitularesPaginado)
 def get_listado(
     limit: int = 6,
+    offset: int = 0,
     estado: str | None = None,
     plan: str | None = None,
     sexo: str | None = None,
     edad: str | None = None,
     service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
-) -> list[ListadoTitulares]:
-    return service.listar_titulares(limit, estado, plan, sexo, edad)
+) -> ListadoTitularesPaginado:
+    return service.listar_titulares(limit, offset, estado, plan, sexo, edad)
 
 
 @router.get("/planes", response_model=list[PlanItem])

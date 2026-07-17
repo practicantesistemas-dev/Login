@@ -54,3 +54,10 @@ class ListadoTitulares(BaseModel):
     BENEFICIARIOS: str
     INSCRIPCION: Optional[str] = None
     ESTADO: str
+
+
+class ListadoTitularesPaginado(BaseModel):
+    items: list[ListadoTitulares]
+    total: int
+    limit: int
+    offset: int

@@ -8,6 +8,7 @@ from app.modules.integraciones.titulares_beneficiarios.repository import (
 )
 from app.modules.integraciones.titulares_beneficiarios.schemas import (
     ListadoTitulares,
+    ListadoTitularesPaginado,
     PlanItem,
     ResumenTitularesBeneficiarios,
     TitularDetalle,
@@ -34,13 +35,20 @@ class TitularesBeneficiariosService:
     def listar_titulares(
         self,
         limit: int = 6,
+        offset: int = 0,
         estado: str | None = None,
         plan: str | None = None,
         sexo: str | None = None,
         edad: str | None = None,
-    ) -> list[ListadoTitulares]:
-        filas = self.repository.listar_titulares(limit, estado, plan, sexo, edad)
-        return [ListadoTitulares(**fila) for fila in filas]
+    ) -> ListadoTitularesPaginado:
+        filas = self.repository.listar_titulares(limit, offset, estado, plan, sexo, edad)
+        total = self.repository.contar_titulares(estado, plan, sexo, edad)
+        return ListadoTitularesPaginado(
+            items=[ListadoTitulares(**fila) for fila in filas],
+            total=total,
+            limit=limit,
+            offset=offset,
+        )
 
     def listar_planes(self) -> list[PlanItem]:
         return [

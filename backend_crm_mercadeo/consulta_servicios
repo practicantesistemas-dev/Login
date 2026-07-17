@@ -1,0 +1,17 @@
+SELECT
+    total_beneficiarios,
+    COUNT(*) AS cantidad_titulares
+FROM (
+    SELECT
+        p.id,
+        COUNT(b.id) AS total_beneficiarios
+    FROM intranet_planliga p
+    LEFT JOIN intranet_planliga_beneficiario b
+           ON b.planliga_id = p.id
+          AND b.estado = 'A'
+    WHERE p.estado = 'A'
+    GROUP BY p.id
+)
+GROUP BY total_beneficiarios
+ORDER BY total_beneficiarios;
+

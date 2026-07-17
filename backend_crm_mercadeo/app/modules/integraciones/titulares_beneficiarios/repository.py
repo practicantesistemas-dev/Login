@@ -90,14 +90,13 @@ class TitularesBeneficiariosRepository:
         )
         return self.db.scalar(stmt) or 0
 
-    def listar_titulares(
+    def _construir_condiciones(
         self,
-        limit: int = 6,
         estado: str | None = None,
         plan: str | None = None,
         sexo: str | None = None,
         edad: str | None = None,
-    ) -> list[dict]:
+    ) -> list[ColumnElement]:
         condiciones = []
 
         if estado:
@@ -124,6 +123,37 @@ class TitularesBeneficiariosRepository:
             condiciones.append(PlanLiga.fecha_nacimiento <= fecha_max)
             if fecha_min is not None:
                 condiciones.append(PlanLiga.fecha_nacimiento > fecha_min)
+
+        return condiciones
+
+    def contar_titulares(
+        self,
+        estado: str | None = None,
+        plan: str | None = None,
+        sexo: str | None = None,
+        edad: str | None = None,
+    ) -> int:
+        condiciones = self._construir_condiciones(estado, plan, sexo, edad)
+
+        stmt = (
+            select(func.count(func.distinct(PlanLiga.id)))
+            .select_from(PlanLiga)
+            .join(TitularServicio, TitularServicio.planliga_id == PlanLiga.id)
+            .join(Servicio, Servicio.id == TitularServicio.servicio_id)
+            .where(*condiciones)
+        )
+        return self.db.scalar(stmt) or 0
+
+    def listar_titulares(
+        self,
+        limit: int = 6,
+        offset: int = 0,
+        estado: str | None = None,
+        plan: str | None = None,
+        sexo: str | None = None,
+        edad: str | None = None,
+    ) -> list[dict]:
+        condiciones = self._construir_condiciones(estado, plan, sexo, edad)
 
         conteo_beneficiarios = func.coalesce(
             select(func.count())
@@ -186,6 +216,7 @@ class TitularesBeneficiariosRepository:
                 PlanLiga.estado,
             )
             .order_by(PlanLiga.fecha_ingreso.desc())
+            .offset(offset)
             .limit(limit)
         )
 
