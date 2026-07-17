@@ -16,6 +16,45 @@ RANGOS_EDAD: dict[str, tuple[int, int | None]] = {
     "51+": (51, None),
 }
 
+# Solo los campos de interes para Mercadeo son editables por API; los legacy
+# de plan (tipo_plan, eps, plan_nombre, etc.) y los de sistema/auditoria
+# quedan afuera a proposito (ver conversacion sobre columnas expuestas).
+CAMPOS_TITULAR_EDITABLES = {
+    "DOCUMENTO": "documento",
+    "TIPO_DOCUMENTO": "tipo",
+    "NOMBRE1": "nombre1",
+    "NOMBRE2": "nombre2",
+    "APELLIDO1": "apellido1",
+    "APELLIDO2": "apellido2",
+    "FECHA_NACIMIENTO": "fecha_nacimiento",
+    "SEXO": "sexo",
+    "CORREO": "correo",
+    "TELEFONO": "telefono",
+    "DIRECCION": "direccion",
+    "CIUDAD": "ciudad",
+    "DEPARTAMENTO": "departamento",
+    "EMPRESA": "empresa",
+    "ESTADO": "estado",
+}
+
+CAMPOS_BENEFICIARIO_EDITABLES = {
+    "TIPO_DOCUMENTO": "tipo",
+    "DOCUMENTO": "documento",
+    "NOMBRE1": "nombre1",
+    "NOMBRE2": "nombre2",
+    "APELLIDO1": "apellido1",
+    "APELLIDO2": "apellido2",
+    "FECHA_NACIMIENTO": "fecha_nacimiento",
+    "SEXO": "sexo",
+    "DIRECCION": "direccion",
+    "CIUDAD": "ciudad",
+    "DEPARTAMENTO": "departamento",
+    "CORREO": "correo",
+    "TELEFONO": "telefono",
+    "EMPRESA": "empresa",
+    "ESTADO": "estado",
+}
+
 
 def _rango_fecha_nacimiento(edad: str, hoy: date) -> tuple[date | None, date | None]:
     edad_min, edad_max = RANGOS_EDAD[edad]
@@ -32,6 +71,32 @@ def _nombre_plan() -> ColumnElement:
         (Servicio.categoria.isnot(None), literal_column("' - '") + Servicio.categoria),
         else_=literal_column("''"),
     )
+
+
+def _columnas_beneficiario() -> list[ColumnElement]:
+    return [
+        PlanLigaBeneficiario.id.label("ID"),
+        PlanLigaBeneficiario.tipo.label("TIPO_DOCUMENTO"),
+        PlanLigaBeneficiario.documento.label("DOCUMENTO"),
+        PlanLigaBeneficiario.nombre1.label("NOMBRE1"),
+        PlanLigaBeneficiario.nombre2.label("NOMBRE2"),
+        PlanLigaBeneficiario.apellido1.label("APELLIDO1"),
+        PlanLigaBeneficiario.apellido2.label("APELLIDO2"),
+        func.to_char(PlanLigaBeneficiario.fecha_nacimiento, "YYYY-MM-DD").label(
+            "FECHA_NACIMIENTO"
+        ),
+        PlanLigaBeneficiario.sexo.label("SEXO"),
+        PlanLigaBeneficiario.direccion.label("DIRECCION"),
+        PlanLigaBeneficiario.ciudad.label("CIUDAD"),
+        PlanLigaBeneficiario.departamento.label("DEPARTAMENTO"),
+        PlanLigaBeneficiario.correo.label("CORREO"),
+        PlanLigaBeneficiario.telefono.label("TELEFONO"),
+        func.to_char(PlanLigaBeneficiario.fecha_ingreso, "YYYY-MM-DD").label(
+            "FECHA_INGRESO"
+        ),
+        PlanLigaBeneficiario.empresa.label("EMPRESA"),
+        PlanLigaBeneficiario.estado.label("ESTADO"),
+    ]
 
 
 class TitularesBeneficiariosRepository:
@@ -72,34 +137,21 @@ class TitularesBeneficiariosRepository:
 
     def listar_beneficiarios(self, id_titular: int) -> list[dict]:
         stmt = (
-            select(
-                PlanLigaBeneficiario.id.label("ID"),
-                PlanLigaBeneficiario.tipo.label("TIPO_DOCUMENTO"),
-                PlanLigaBeneficiario.documento.label("DOCUMENTO"),
-                PlanLigaBeneficiario.nombre1.label("NOMBRE1"),
-                PlanLigaBeneficiario.nombre2.label("NOMBRE2"),
-                PlanLigaBeneficiario.apellido1.label("APELLIDO1"),
-                PlanLigaBeneficiario.apellido2.label("APELLIDO2"),
-                func.to_char(PlanLigaBeneficiario.fecha_nacimiento, "YYYY-MM-DD").label(
-                    "FECHA_NACIMIENTO"
-                ),
-                PlanLigaBeneficiario.sexo.label("SEXO"),
-                PlanLigaBeneficiario.direccion.label("DIRECCION"),
-                PlanLigaBeneficiario.ciudad.label("CIUDAD"),
-                PlanLigaBeneficiario.departamento.label("DEPARTAMENTO"),
-                PlanLigaBeneficiario.correo.label("CORREO"),
-                PlanLigaBeneficiario.telefono.label("TELEFONO"),
-                func.to_char(PlanLigaBeneficiario.fecha_ingreso, "YYYY-MM-DD").label(
-                    "FECHA_INGRESO"
-                ),
-                PlanLigaBeneficiario.empresa.label("EMPRESA"),
-                PlanLigaBeneficiario.estado.label("ESTADO"),
-            )
+            select(*_columnas_beneficiario())
             .where(PlanLigaBeneficiario.planliga_id == id_titular)
             .order_by(PlanLigaBeneficiario.orden, PlanLigaBeneficiario.id)
         )
 
         return [dict(row) for row in self.db.execute(stmt).mappings().all()]
+
+    def obtener_beneficiario(self, id_titular: int, id_beneficiario: int) -> dict | None:
+        stmt = select(*_columnas_beneficiario()).where(
+            PlanLigaBeneficiario.id == id_beneficiario,
+            PlanLigaBeneficiario.planliga_id == id_titular,
+        )
+
+        fila = self.db.execute(stmt).mappings().first()
+        return dict(fila) if fila is not None else None
 
     def listar_planes(self) -> list[Servicio]:
         stmt = select(Servicio).order_by(Servicio.nombre)
@@ -280,3 +332,27 @@ class TitularesBeneficiariosRepository:
         )
 
         return [dict(row) for row in self.db.execute(stmt).mappings().all()]
+
+    def actualizar_titular(self, id_titular: int, datos: dict) -> bool:
+        titular = self.db.get(PlanLiga, id_titular)
+        if titular is None:
+            return False
+        for campo, valor in datos.items():
+            atributo = CAMPOS_TITULAR_EDITABLES.get(campo)
+            if atributo:
+                setattr(titular, atributo, valor)
+        self.db.commit()
+        return True
+
+    def actualizar_beneficiario(
+        self, id_titular: int, id_beneficiario: int, datos: dict
+    ) -> bool:
+        beneficiario = self.db.get(PlanLigaBeneficiario, id_beneficiario)
+        if beneficiario is None or beneficiario.planliga_id != id_titular:
+            return False
+        for campo, valor in datos.items():
+            atributo = CAMPOS_BENEFICIARIO_EDITABLES.get(campo)
+            if atributo:
+                setattr(beneficiario, atributo, valor)
+        self.db.commit()
+        return True

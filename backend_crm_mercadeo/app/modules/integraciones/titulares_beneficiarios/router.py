@@ -5,10 +5,12 @@ from app.modules.integraciones.titulares_beneficiarios.dependencies import (
 )
 from app.modules.integraciones.titulares_beneficiarios.schemas import (
     BeneficiarioDetalle,
+    BeneficiarioUpdate,
     ListadoTitularesPaginado,
     PlanItem,
     ResumenTitularesBeneficiarios,
     TitularDetalle,
+    TitularUpdate,
 )
 from app.modules.integraciones.titulares_beneficiarios.service import (
     TitularesBeneficiariosService,
@@ -60,9 +62,28 @@ def get_beneficiarios(
     return service.listar_beneficiarios(id_titular)
 
 
+@router.patch("/{id_titular}/beneficiarios/{id_beneficiario}", response_model=BeneficiarioDetalle)
+def update_beneficiario(
+    id_titular: int,
+    id_beneficiario: int,
+    data: BeneficiarioUpdate,
+    service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
+) -> BeneficiarioDetalle:
+    return service.actualizar_beneficiario(id_titular, id_beneficiario, data)
+
+
 @router.get("/{id_titular}", response_model=TitularDetalle)
 def get_titular(
     id_titular: int,
     service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
 ) -> TitularDetalle:
     return service.obtener_titular(id_titular)
+
+
+@router.patch("/{id_titular}", response_model=TitularDetalle)
+def update_titular(
+    id_titular: int,
+    data: TitularUpdate,
+    service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
+) -> TitularDetalle:
+    return service.actualizar_titular(id_titular, data)

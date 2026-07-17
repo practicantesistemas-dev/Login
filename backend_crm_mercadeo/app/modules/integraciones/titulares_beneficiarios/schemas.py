@@ -1,3 +1,5 @@
+from datetime import date
+
 from pydantic import BaseModel
 from typing import Optional
 
@@ -56,6 +58,24 @@ class ListadoTitulares(BaseModel):
     ESTADO: str
 
 
+class TitularUpdate(BaseModel):
+    DOCUMENTO: Optional[str] = None
+    TIPO_DOCUMENTO: Optional[str] = None
+    NOMBRE1: Optional[str] = None
+    NOMBRE2: Optional[str] = None
+    APELLIDO1: Optional[str] = None
+    APELLIDO2: Optional[str] = None
+    FECHA_NACIMIENTO: Optional[date] = None
+    SEXO: Optional[str] = None
+    CORREO: Optional[str] = None
+    TELEFONO: Optional[str] = None
+    DIRECCION: Optional[str] = None
+    CIUDAD: Optional[str] = None
+    DEPARTAMENTO: Optional[str] = None
+    EMPRESA: Optional[str] = None
+    ESTADO: Optional[str] = None
+
+
 class ListadoTitularesPaginado(BaseModel):
     items: list[ListadoTitulares]
     total: int
@@ -79,5 +99,23 @@ class BeneficiarioDetalle(BaseModel):
     CORREO: Optional[str] = None
     TELEFONO: Optional[str] = None
     FECHA_INGRESO: Optional[str] = None
+    EMPRESA: Optional[str] = None
+    ESTADO: Optional[str] = None
+
+
+class BeneficiarioUpdate(BaseModel):
+    TIPO_DOCUMENTO: Optional[str] = None
+    DOCUMENTO: Optional[str] = None
+    NOMBRE1: Optional[str] = None
+    NOMBRE2: Optional[str] = None
+    APELLIDO1: Optional[str] = None
+    APELLIDO2: Optional[str] = None
+    FECHA_NACIMIENTO: Optional[date] = None
+    SEXO: Optional[str] = None
+    DIRECCION: Optional[str] = None
+    CIUDAD: Optional[str] = None
+    DEPARTAMENTO: Optional[str] = None
+    CORREO: Optional[str] = None
+    TELEFONO: Optional[str] = None
     EMPRESA: Optional[str] = None
     ESTADO: Optional[str] = None

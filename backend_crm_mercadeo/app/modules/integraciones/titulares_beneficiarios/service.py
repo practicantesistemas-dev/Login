@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.modules.integraciones.titulares_beneficiarios.exceptions import (
+    BeneficiarioNotFoundError,
     TitularNotFoundError,
 )
 from app.modules.integraciones.titulares_beneficiarios.repository import (
@@ -8,11 +9,13 @@ from app.modules.integraciones.titulares_beneficiarios.repository import (
 )
 from app.modules.integraciones.titulares_beneficiarios.schemas import (
     BeneficiarioDetalle,
+    BeneficiarioUpdate,
     ListadoTitulares,
     ListadoTitularesPaginado,
     PlanItem,
     ResumenTitularesBeneficiarios,
     TitularDetalle,
+    TitularUpdate,
 )
 
 
@@ -38,6 +41,24 @@ class TitularesBeneficiariosService:
             raise TitularNotFoundError(id_titular)
         filas = self.repository.listar_beneficiarios(id_titular)
         return [BeneficiarioDetalle(**fila) for fila in filas]
+
+    def actualizar_titular(self, id_titular: int, data: TitularUpdate) -> TitularDetalle:
+        cambios = data.model_dump(exclude_unset=True)
+        if not self.repository.actualizar_titular(id_titular, cambios):
+            raise TitularNotFoundError(id_titular)
+        fila = self.repository.obtener_titular(id_titular)
+        return TitularDetalle(**fila)
+
+    def actualizar_beneficiario(
+        self, id_titular: int, id_beneficiario: int, data: BeneficiarioUpdate
+    ) -> BeneficiarioDetalle:
+        if self.repository.obtener_titular(id_titular) is None:
+            raise TitularNotFoundError(id_titular)
+        cambios = data.model_dump(exclude_unset=True)
+        if not self.repository.actualizar_beneficiario(id_titular, id_beneficiario, cambios):
+            raise BeneficiarioNotFoundError(id_beneficiario)
+        fila = self.repository.obtener_beneficiario(id_titular, id_beneficiario)
+        return BeneficiarioDetalle(**fila)
 
     def listar_titulares(
         self,
