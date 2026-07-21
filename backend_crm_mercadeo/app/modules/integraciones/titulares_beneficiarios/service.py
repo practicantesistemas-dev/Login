@@ -1,15 +1,24 @@
+from datetime import date
+
 from sqlalchemy.orm import Session
 
 from app.modules.integraciones.titulares_beneficiarios.exceptions import (
     BeneficiarioNotFoundError,
     TitularNotFoundError,
 )
+from app.modules.integraciones.titulares_beneficiarios.legacy_repository import (
+    LegacyRepository,
+)
 from app.modules.integraciones.titulares_beneficiarios.repository import (
     TitularesBeneficiariosRepository,
 )
 from app.modules.integraciones.titulares_beneficiarios.schemas import (
+    ActivacionBeneficiarioResultado,
+    ActivacionTitularResultado,
     BeneficiarioDetalle,
     BeneficiarioUpdate,
+    DesactivacionBeneficiarioResultado,
+    DesactivacionTitularResultado,
     ListadoTitulares,
     ListadoTitularesPaginado,
     PlanItem,
@@ -22,6 +31,7 @@ from app.modules.integraciones.titulares_beneficiarios.schemas import (
 class TitularesBeneficiariosService:
     def __init__(self, db: Session) -> None:
         self.repository = TitularesBeneficiariosRepository(db)
+        self.legacy_repository = LegacyRepository(db)
 
     def resumen(self) -> ResumenTitularesBeneficiarios:
         r = self.repository
@@ -59,6 +69,70 @@ class TitularesBeneficiariosService:
             raise BeneficiarioNotFoundError(id_beneficiario)
         fila = self.repository.obtener_beneficiario(id_titular, id_beneficiario)
         return BeneficiarioDetalle(**fila)
+
+    def activar_beneficiario(
+        self, id_titular: int, id_beneficiario: int
+    ) -> ActivacionBeneficiarioResultado:
+        if not self.repository.activar_beneficiario(id_titular, id_beneficiario):
+            raise BeneficiarioNotFoundError(id_beneficiario)
+        fila = self.repository.obtener_beneficiario(id_titular, id_beneficiario)
+        num_incle = self.legacy_repository.desmarcar_registros_incle(
+            fila["TIPO_DOCUMENTO"], fila["DOCUMENTO"]
+        )
+        return ActivacionBeneficiarioResultado(
+            beneficiario=BeneficiarioDetalle(**fila),
+            registros_incle_desmarcados=num_incle,
+        )
+
+    def desactivar_beneficiario(
+        self, id_titular: int, id_beneficiario: int
+    ) -> DesactivacionBeneficiarioResultado:
+        if not self.repository.desactivar_beneficiario(id_titular, id_beneficiario):
+            raise BeneficiarioNotFoundError(id_beneficiario)
+        fila = self.repository.obtener_beneficiario(id_titular, id_beneficiario)
+        num_incle = self.legacy_repository.marcar_registros_incle(
+            fila["TIPO_DOCUMENTO"], fila["DOCUMENTO"]
+        )
+        return DesactivacionBeneficiarioResultado(
+            beneficiario=BeneficiarioDetalle(**fila),
+            registros_incle_marcados=num_incle,
+        )
+
+    def activar_titular(
+        self, id_titular: int, fecha_ingreso: date | None = None
+    ) -> ActivacionTitularResultado:
+        fecha = fecha_ingreso or date.today()
+        if not self.repository.activar_titular(id_titular, fecha):
+            raise TitularNotFoundError(id_titular)
+        num_beneficiarios = self.repository.activar_beneficiarios(id_titular, fecha)
+        fila = self.repository.obtener_titular(id_titular)
+        num_incle = self.legacy_repository.desmarcar_registros_incle(
+            fila["TIPO_DOCUMENTO"], fila["DOCUMENTO"]
+        )
+        return ActivacionTitularResultado(
+            titular=TitularDetalle(**fila),
+            beneficiarios_activados=num_beneficiarios,
+            registros_incle_desmarcados=num_incle,
+        )
+
+    def desactivar_titular(self, id_titular: int) -> DesactivacionTitularResultado:
+        if not self.repository.desactivar_titular(id_titular):
+            raise TitularNotFoundError(id_titular)
+        fila = self.repository.obtener_titular(id_titular)
+        tipo, documento = fila["TIPO_DOCUMENTO"], fila["DOCUMENTO"]
+
+        beneficiarios_desactivados = self.repository.desactivar_beneficiarios(id_titular)
+        self.legacy_repository.desactivar_preplanliga(tipo, documento)
+
+        num_incle = self.legacy_repository.marcar_registros_incle(tipo, documento)
+        for tipo_b, documento_b in beneficiarios_desactivados:
+            num_incle += self.legacy_repository.marcar_registros_incle(tipo_b, documento_b)
+
+        return DesactivacionTitularResultado(
+            titular=TitularDetalle(**fila),
+            beneficiarios_desactivados=len(beneficiarios_desactivados),
+            registros_incle_marcados=num_incle,
+        )
 
     def listar_titulares(
         self,

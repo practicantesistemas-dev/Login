@@ -76,6 +76,22 @@ class TitularUpdate(BaseModel):
     ESTADO: Optional[str] = None
 
 
+class TitularActivar(BaseModel):
+    FECHA_INGRESO: Optional[date] = None
+
+
+class ActivacionTitularResultado(BaseModel):
+    titular: TitularDetalle
+    beneficiarios_activados: int
+    registros_incle_desmarcados: int
+
+
+class DesactivacionTitularResultado(BaseModel):
+    titular: TitularDetalle
+    beneficiarios_desactivados: int
+    registros_incle_marcados: int
+
+
 class ListadoTitularesPaginado(BaseModel):
     items: list[ListadoTitulares]
     total: int
@@ -101,6 +117,16 @@ class BeneficiarioDetalle(BaseModel):
     FECHA_INGRESO: Optional[str] = None
     EMPRESA: Optional[str] = None
     ESTADO: Optional[str] = None
+
+
+class ActivacionBeneficiarioResultado(BaseModel):
+    beneficiario: BeneficiarioDetalle
+    registros_incle_desmarcados: int
+
+
+class DesactivacionBeneficiarioResultado(BaseModel):
+    beneficiario: BeneficiarioDetalle
+    registros_incle_marcados: int
 
 
 class BeneficiarioUpdate(BaseModel):

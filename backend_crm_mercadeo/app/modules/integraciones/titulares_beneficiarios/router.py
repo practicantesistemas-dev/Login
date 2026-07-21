@@ -4,11 +4,16 @@ from app.modules.integraciones.titulares_beneficiarios.dependencies import (
     get_titulares_beneficiarios_service,
 )
 from app.modules.integraciones.titulares_beneficiarios.schemas import (
+    ActivacionBeneficiarioResultado,
+    ActivacionTitularResultado,
     BeneficiarioDetalle,
     BeneficiarioUpdate,
+    DesactivacionBeneficiarioResultado,
+    DesactivacionTitularResultado,
     ListadoTitularesPaginado,
     PlanItem,
     ResumenTitularesBeneficiarios,
+    TitularActivar,
     TitularDetalle,
     TitularUpdate,
 )
@@ -72,6 +77,30 @@ def update_beneficiario(
     return service.actualizar_beneficiario(id_titular, id_beneficiario, data)
 
 
+@router.post(
+    "/{id_titular}/beneficiarios/{id_beneficiario}/activar",
+    response_model=ActivacionBeneficiarioResultado,
+)
+def activar_beneficiario(
+    id_titular: int,
+    id_beneficiario: int,
+    service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
+) -> ActivacionBeneficiarioResultado:
+    return service.activar_beneficiario(id_titular, id_beneficiario)
+
+
+@router.post(
+    "/{id_titular}/beneficiarios/{id_beneficiario}/desactivar",
+    response_model=DesactivacionBeneficiarioResultado,
+)
+def desactivar_beneficiario(
+    id_titular: int,
+    id_beneficiario: int,
+    service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
+) -> DesactivacionBeneficiarioResultado:
+    return service.desactivar_beneficiario(id_titular, id_beneficiario)
+
+
 @router.get("/{id_titular}", response_model=TitularDetalle)
 def get_titular(
     id_titular: int,
@@ -87,3 +116,20 @@ def update_titular(
     service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
 ) -> TitularDetalle:
     return service.actualizar_titular(id_titular, data)
+
+
+@router.post("/{id_titular}/activar", response_model=ActivacionTitularResultado)
+def activar_titular(
+    id_titular: int,
+    data: TitularActivar = TitularActivar(),
+    service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
+) -> ActivacionTitularResultado:
+    return service.activar_titular(id_titular, data.FECHA_INGRESO)
+
+
+@router.post("/{id_titular}/desactivar", response_model=DesactivacionTitularResultado)
+def desactivar_titular(
+    id_titular: int,
+    service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
+) -> DesactivacionTitularResultado:
+    return service.desactivar_titular(id_titular)

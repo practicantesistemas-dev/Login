@@ -1,6 +1,16 @@
 from datetime import date
 
-from sqlalchemy import ColumnElement, String, case, cast, func, literal_column, or_, select
+from sqlalchemy import (
+    ColumnElement,
+    String,
+    case,
+    cast,
+    func,
+    literal_column,
+    or_,
+    select,
+    update,
+)
 from sqlalchemy.orm import Session
 
 from app.models import PlanLiga, PlanLigaBeneficiario, Servicio, TitularServicio
@@ -356,3 +366,72 @@ class TitularesBeneficiariosRepository:
                 setattr(beneficiario, atributo, valor)
         self.db.commit()
         return True
+
+    def activar_beneficiario(self, id_titular: int, id_beneficiario: int) -> bool:
+        beneficiario = self.db.get(PlanLigaBeneficiario, id_beneficiario)
+        if beneficiario is None or beneficiario.planliga_id != id_titular:
+            return False
+        beneficiario.estado = ESTADO_ACTIVO
+        self.db.commit()
+        return True
+
+    def desactivar_beneficiario(self, id_titular: int, id_beneficiario: int) -> bool:
+        beneficiario = self.db.get(PlanLigaBeneficiario, id_beneficiario)
+        if beneficiario is None or beneficiario.planliga_id != id_titular:
+            return False
+        beneficiario.estado = ESTADO_INACTIVO
+        self.db.commit()
+        return True
+
+    def activar_titular(self, id_titular: int, fecha_ingreso: date) -> bool:
+        titular = self.db.get(PlanLiga, id_titular)
+        if titular is None:
+            return False
+        titular.estado = ESTADO_ACTIVO
+        titular.fecha_ingreso = fecha_ingreso
+        # titular.renovado = "S"  # TODO: descomentar en produccion (columna aun no existe en BD de pruebas)
+        self.db.commit()
+        return True
+
+    def activar_beneficiarios(self, id_titular: int, fecha_ingreso: date) -> int:
+        stmt = (
+            update(PlanLigaBeneficiario)
+            .where(PlanLigaBeneficiario.planliga_id == id_titular)
+            .values(
+                estado=ESTADO_ACTIVO,
+                fecha_ingreso=fecha_ingreso,
+                # renovado="S",  # TODO: descomentar en produccion (columna aun no existe en BD de pruebas)
+            )
+        )
+        resultado = self.db.execute(stmt)
+        self.db.commit()
+        return resultado.rowcount
+
+    def desactivar_titular(self, id_titular: int) -> bool:
+        titular = self.db.get(PlanLiga, id_titular)
+        if titular is None:
+            return False
+        titular.estado = ESTADO_INACTIVO
+        self.db.commit()
+        return True
+
+    def desactivar_beneficiarios(self, id_titular: int) -> list[tuple[str, str]]:
+        stmt_select = select(
+            PlanLigaBeneficiario.tipo, PlanLigaBeneficiario.documento
+        ).where(
+            PlanLigaBeneficiario.planliga_id == id_titular,
+            PlanLigaBeneficiario.estado == ESTADO_ACTIVO,
+        )
+        beneficiarios = [tuple(fila) for fila in self.db.execute(stmt_select).all()]
+
+        stmt_update = (
+            update(PlanLigaBeneficiario)
+            .where(
+                PlanLigaBeneficiario.planliga_id == id_titular,
+                PlanLigaBeneficiario.estado == ESTADO_ACTIVO,
+            )
+            .values(estado=ESTADO_INACTIVO)
+        )
+        self.db.execute(stmt_update)
+        self.db.commit()
+        return beneficiarios
