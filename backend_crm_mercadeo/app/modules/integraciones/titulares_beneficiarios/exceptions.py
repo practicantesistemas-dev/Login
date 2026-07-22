@@ -19,3 +19,13 @@ class TitularInactivoError(ConflictError):
                 f"{id_titular} esta inactivo"
             )
         )
+
+
+class DocumentoDuplicadoError(ConflictError):
+    def __init__(self, documento: str, tipo_registro: str) -> None:
+        super().__init__(
+            detail=(
+                f"El documento {documento} ya esta registrado como "
+                f"{tipo_registro.lower()}"
+            )
+        )

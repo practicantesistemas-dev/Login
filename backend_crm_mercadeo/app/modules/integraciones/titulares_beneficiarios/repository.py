@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from sqlalchemy import (
     ColumnElement,
@@ -45,6 +45,29 @@ CAMPOS_TITULAR_EDITABLES = {
     "DEPARTAMENTO": "departamento",
     "EMPRESA": "empresa",
     "ESTADO": "estado",
+}
+
+CAMPOS_TITULAR_CREACION = {
+    "TIPO_PLAN": "tipo_plan",
+    "TIPO_DOCUMENTO": "tipo",
+    "DOCUMENTO": "documento",
+    "NOMBRE1": "nombre1",
+    "NOMBRE2": "nombre2",
+    "APELLIDO1": "apellido1",
+    "APELLIDO2": "apellido2",
+    "FECHA_NACIMIENTO": "fecha_nacimiento",
+    "SEXO": "sexo",
+    "DIRECCION": "direccion",
+    "CIUDAD": "ciudad",
+    "DEPARTAMENTO": "departamento",
+    "CORREO": "correo",
+    "TELEFONO": "telefono",
+    "TIPO_AFILIADO": "tipo_afiliado",
+    "EMPRESA": "empresa",
+    "EPS": "eps",
+    "OTRAEPS": "otraeps",
+    "PLAN_SALUD": "plan_salud",
+    "PLAN_NOMBRE": "plan_nombre",
 }
 
 CAMPOS_BENEFICIARIO_EDITABLES = {
@@ -167,9 +190,12 @@ class TitularesBeneficiariosRepository:
         stmt = select(Servicio).order_by(Servicio.nombre)
         return list(self.db.scalars(stmt))
 
-    def listar_nombres_planes(self) -> list[str]:
-        stmt = select(_nombre_plan()).order_by(Servicio.nombre, Servicio.categoria)
-        return list(self.db.scalars(stmt))
+    def listar_nombres_planes(self) -> list[dict]:
+        stmt = (
+            select(Servicio.id.label("ID"), _nombre_plan().label("NOMBRE"))
+            .order_by(Servicio.nombre, Servicio.categoria)
+        )
+        return [dict(row) for row in self.db.execute(stmt).mappings().all()]
 
     def contar_titulares_activos(self) -> int:
         stmt = select(func.count()).select_from(PlanLiga).where(
@@ -366,6 +392,57 @@ class TitularesBeneficiariosRepository:
                 setattr(beneficiario, atributo, valor)
         self.db.commit()
         return True
+
+    def existe_documento(self, tipo: str, documento: str) -> str | None:
+        """Retorna 'TITULAR', 'BENEFICIARIO' o None si el documento no esta registrado."""
+        if (
+            self.db.scalar(
+                select(PlanLiga.id)
+                .where(PlanLiga.tipo == tipo, PlanLiga.documento == documento)
+                .limit(1)
+            )
+            is not None
+        ):
+            return "TITULAR"
+
+        if (
+            self.db.scalar(
+                select(PlanLigaBeneficiario.id)
+                .where(
+                    PlanLigaBeneficiario.tipo == tipo,
+                    PlanLigaBeneficiario.documento == documento,
+                )
+                .limit(1)
+            )
+            is not None
+        ):
+            return "BENEFICIARIO"
+
+        return None
+
+    def crear_titular(self, datos: dict, fecha_ingreso: date) -> int:
+        campos = {
+            atributo: datos.get(campo)
+            for campo, atributo in CAMPOS_TITULAR_CREACION.items()
+        }
+        titular = PlanLiga(
+            **campos,
+            estado=ESTADO_ACTIVO,
+            fecha_ingreso=fecha_ingreso,
+            fecha_registro=datetime.now(),
+        )
+        self.db.add(titular)
+        self.db.commit()
+        self.db.refresh(titular)
+        return titular.id
+
+    def asociar_servicio(self, id_titular: int, servicio_id: int) -> None:
+        self.db.add(
+            TitularServicio(
+                planliga_id=id_titular, servicio_id=servicio_id, estado="activo"
+            )
+        )
+        self.db.commit()
 
     def activar_beneficiario(
         self, id_titular: int, id_beneficiario: int, fecha_ingreso: date

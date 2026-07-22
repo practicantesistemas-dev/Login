@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.modules.integraciones.titulares_beneficiarios.exceptions import (
     BeneficiarioNotFoundError,
+    DocumentoDuplicadoError,
     TitularInactivoError,
     TitularNotFoundError,
 )
@@ -19,12 +20,15 @@ from app.modules.integraciones.titulares_beneficiarios.schemas import (
     ActivacionTitularResultado,
     BeneficiarioDetalle,
     BeneficiarioUpdate,
+    CreacionTitularResultado,
     DesactivacionBeneficiarioResultado,
     DesactivacionTitularResultado,
     ListadoTitulares,
     ListadoTitularesPaginado,
     PlanItem,
+    PlanNombre,
     ResumenTitularesBeneficiarios,
+    TitularCrear,
     TitularDetalle,
     TitularUpdate,
 )
@@ -53,6 +57,36 @@ class TitularesBeneficiariosService:
             raise TitularNotFoundError(id_titular)
         filas = self.repository.listar_beneficiarios(id_titular)
         return [BeneficiarioDetalle(**fila) for fila in filas]
+
+    def crear_titular(self, data: TitularCrear) -> CreacionTitularResultado:
+        duplicado = self.repository.existe_documento(data.TIPO_DOCUMENTO, data.DOCUMENTO)
+        if duplicado is not None:
+            raise DocumentoDuplicadoError(data.DOCUMENTO, duplicado)
+
+        datos = data.model_dump(exclude={"FECHA_INGRESO", "SERVICIO_ID"})
+        self.legacy_repository.crear_preplanliga(datos)
+
+        id_titular = self.repository.crear_titular(datos, data.FECHA_INGRESO)
+        self.repository.asociar_servicio(id_titular, data.SERVICIO_ID)
+
+        usuario_creado = self.legacy_repository.crear_usuario_servinte(
+            data.TIPO_DOCUMENTO, data.DOCUMENTO, data.NOMBRE1, data.NOMBRE2,
+            data.APELLIDO1, data.APELLIDO2,
+        )
+        nombre_completo = " ".join(
+            parte for parte in [data.NOMBRE1, data.NOMBRE2, data.APELLIDO1, data.APELLIDO2]
+            if parte
+        )
+        marcado_incle = self.legacy_repository.marcar_nuevo_titular_incle(
+            data.TIPO_DOCUMENTO, data.DOCUMENTO, nombre_completo
+        )
+
+        fila = self.repository.obtener_titular(id_titular)
+        return CreacionTitularResultado(
+            titular=TitularDetalle(**fila),
+            usuario_servinte_creado=usuario_creado,
+            marcado_en_incle=marcado_incle,
+        )
 
     def actualizar_titular(self, id_titular: int, data: TitularUpdate) -> TitularDetalle:
         cambios = data.model_dump(exclude_unset=True)
@@ -180,5 +214,5 @@ class TitularesBeneficiariosService:
             for servicio in self.repository.listar_planes()
         ]
 
-    def listar_nombres_planes(self) -> list[str]:
-        return self.repository.listar_nombres_planes()
+    def listar_nombres_planes(self) -> list[PlanNombre]:
+        return [PlanNombre(**fila) for fila in self.repository.listar_nombres_planes()]

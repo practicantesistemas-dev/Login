@@ -18,6 +18,11 @@ class PlanItem(BaseModel):
     ESTADO: bool
 
 
+class PlanNombre(BaseModel):
+    ID: int
+    NOMBRE: str
+
+
 class TitularDetalle(BaseModel):
     ID_TITULAR: int
     DOCUMENTO: Optional[str] = None
@@ -78,6 +83,37 @@ class TitularUpdate(BaseModel):
 
 class TitularActivar(BaseModel):
     FECHA_INGRESO: date
+
+
+class TitularCrear(BaseModel):
+    TIPO_PLAN: Optional[str] = None
+    TIPO_DOCUMENTO: str
+    DOCUMENTO: str
+    NOMBRE1: str
+    NOMBRE2: Optional[str] = None
+    APELLIDO1: str
+    APELLIDO2: Optional[str] = None
+    FECHA_NACIMIENTO: Optional[date] = None
+    SEXO: Optional[str] = None
+    DIRECCION: Optional[str] = None
+    CIUDAD: Optional[str] = None
+    DEPARTAMENTO: Optional[str] = None
+    CORREO: Optional[str] = None
+    TELEFONO: Optional[str] = None
+    FECHA_INGRESO: date
+    TIPO_AFILIADO: str
+    EMPRESA: Optional[str] = None
+    EPS: Optional[str] = None
+    OTRAEPS: Optional[str] = None
+    PLAN_SALUD: str
+    PLAN_NOMBRE: str
+    SERVICIO_ID: int
+
+
+class CreacionTitularResultado(BaseModel):
+    titular: TitularDetalle
+    usuario_servinte_creado: bool
+    marcado_en_incle: bool
 
 
 class ActivacionTitularResultado(BaseModel):

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 
 from app.modules.integraciones.titulares_beneficiarios.dependencies import (
     get_titulares_beneficiarios_service,
@@ -9,12 +9,15 @@ from app.modules.integraciones.titulares_beneficiarios.schemas import (
     BeneficiarioActivar,
     BeneficiarioDetalle,
     BeneficiarioUpdate,
+    CreacionTitularResultado,
     DesactivacionBeneficiarioResultado,
     DesactivacionTitularResultado,
     ListadoTitularesPaginado,
     PlanItem,
+    PlanNombre,
     ResumenTitularesBeneficiarios,
     TitularActivar,
+    TitularCrear,
     TitularDetalle,
     TitularUpdate,
 )
@@ -53,10 +56,10 @@ def get_planes(
     return service.listar_planes()
 
 
-@router.get("/planes/nombres", response_model=list[str])
+@router.get("/planes/nombres", response_model=list[PlanNombre])
 def get_nombres_planes(
     service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
-) -> list[str]:
+) -> list[PlanNombre]:
     return service.listar_nombres_planes()
 
 
@@ -101,6 +104,18 @@ def desactivar_beneficiario(
     service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
 ) -> DesactivacionBeneficiarioResultado:
     return service.desactivar_beneficiario(id_titular, id_beneficiario)
+
+
+@router.post(
+    "",
+    response_model=CreacionTitularResultado,
+    status_code=status.HTTP_201_CREATED,
+)
+def crear_titular(
+    data: TitularCrear,
+    service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
+) -> CreacionTitularResultado:
+    return service.crear_titular(data)
 
 
 @router.get("/{id_titular}", response_model=TitularDetalle)
