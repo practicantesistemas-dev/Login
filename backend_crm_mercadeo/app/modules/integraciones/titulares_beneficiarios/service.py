@@ -4,12 +4,14 @@ from sqlalchemy.orm import Session
 
 from app.modules.integraciones.titulares_beneficiarios.exceptions import (
     BeneficiarioNotFoundError,
+    TitularInactivoError,
     TitularNotFoundError,
 )
 from app.modules.integraciones.titulares_beneficiarios.legacy_repository import (
     LegacyRepository,
 )
 from app.modules.integraciones.titulares_beneficiarios.repository import (
+    ESTADO_ACTIVO,
     TitularesBeneficiariosRepository,
 )
 from app.modules.integraciones.titulares_beneficiarios.schemas import (
@@ -71,9 +73,15 @@ class TitularesBeneficiariosService:
         return BeneficiarioDetalle(**fila)
 
     def activar_beneficiario(
-        self, id_titular: int, id_beneficiario: int
+        self, id_titular: int, id_beneficiario: int, fecha_ingreso: date
     ) -> ActivacionBeneficiarioResultado:
-        if not self.repository.activar_beneficiario(id_titular, id_beneficiario):
+        titular = self.repository.obtener_titular(id_titular)
+        if titular is None:
+            raise TitularNotFoundError(id_titular)
+        if titular["ESTADO"] != ESTADO_ACTIVO:
+            raise TitularInactivoError(id_titular)
+
+        if not self.repository.activar_beneficiario(id_titular, id_beneficiario, fecha_ingreso):
             raise BeneficiarioNotFoundError(id_beneficiario)
         fila = self.repository.obtener_beneficiario(id_titular, id_beneficiario)
         num_incle = self.legacy_repository.desmarcar_registros_incle(
@@ -99,12 +107,11 @@ class TitularesBeneficiariosService:
         )
 
     def activar_titular(
-        self, id_titular: int, fecha_ingreso: date | None = None
+        self, id_titular: int, fecha_ingreso: date
     ) -> ActivacionTitularResultado:
-        fecha = fecha_ingreso or date.today()
-        if not self.repository.activar_titular(id_titular, fecha):
+        if not self.repository.activar_titular(id_titular, fecha_ingreso):
             raise TitularNotFoundError(id_titular)
-        num_beneficiarios = self.repository.activar_beneficiarios(id_titular, fecha)
+        num_beneficiarios = self.repository.activar_beneficiarios(id_titular, fecha_ingreso)
         fila = self.repository.obtener_titular(id_titular)
         num_incle = self.legacy_repository.desmarcar_registros_incle(
             fila["TIPO_DOCUMENTO"], fila["DOCUMENTO"]

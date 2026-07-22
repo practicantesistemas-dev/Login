@@ -101,7 +101,7 @@ def _columnas_beneficiario() -> list[ColumnElement]:
         PlanLigaBeneficiario.departamento.label("DEPARTAMENTO"),
         PlanLigaBeneficiario.correo.label("CORREO"),
         PlanLigaBeneficiario.telefono.label("TELEFONO"),
-        func.to_char(PlanLigaBeneficiario.fecha_ingreso, "YYYY-MM-DD").label(
+        func.to_char(PlanLigaBeneficiario.fecha_ingreso, "DD/MM/YYYY").label(
             "FECHA_INGRESO"
         ),
         PlanLigaBeneficiario.empresa.label("EMPRESA"),
@@ -122,7 +122,7 @@ class TitularesBeneficiariosRepository:
             PlanLiga.nombre2.label("NOMBRE2"),
             PlanLiga.apellido1.label("APELLIDO1"),
             PlanLiga.apellido2.label("APELLIDO2"),
-            func.to_char(PlanLiga.fecha_nacimiento, "YYYY-MM-DD").label(
+            func.to_char(PlanLiga.fecha_nacimiento, "DD/MM/YYYY").label(
                 "FECHA_NACIMIENTO"
             ),
             PlanLiga.sexo.label("SEXO"),
@@ -139,7 +139,7 @@ class TitularesBeneficiariosRepository:
             PlanLiga.plan_salud.label("PLAN_SALUD"),
             PlanLiga.plan_nombre.label("PLAN_NOMBRE"),
             PlanLiga.estado.label("ESTADO"),
-            func.to_char(PlanLiga.fecha_ingreso, "YYYY-MM-DD").label("FECHA_INGRESO"),
+            func.to_char(PlanLiga.fecha_ingreso, "DD/MM/YYYY").label("FECHA_INGRESO"),
         ).where(PlanLiga.id == id_titular)
 
         fila = self.db.execute(stmt).mappings().first()
@@ -315,7 +315,7 @@ class TitularesBeneficiariosRepository:
                 .label("BENEFICIARIOS"),
                 PlanLiga.correo.label("EMAIL"),
                 PlanLiga.telefono.label("TELEFONO"),
-                func.to_char(PlanLiga.fecha_ingreso, "YYYY-MM-DD").label("INSCRIPCION"),
+                func.to_char(PlanLiga.fecha_ingreso, "DD/MM/YYYY").label("INSCRIPCION"),
                 PlanLiga.estado.label("ESTADO"),
             )
             .select_from(PlanLiga)
@@ -367,11 +367,14 @@ class TitularesBeneficiariosRepository:
         self.db.commit()
         return True
 
-    def activar_beneficiario(self, id_titular: int, id_beneficiario: int) -> bool:
+    def activar_beneficiario(
+        self, id_titular: int, id_beneficiario: int, fecha_ingreso: date
+    ) -> bool:
         beneficiario = self.db.get(PlanLigaBeneficiario, id_beneficiario)
         if beneficiario is None or beneficiario.planliga_id != id_titular:
             return False
         beneficiario.estado = ESTADO_ACTIVO
+        beneficiario.fecha_ingreso = fecha_ingreso
         self.db.commit()
         return True
 

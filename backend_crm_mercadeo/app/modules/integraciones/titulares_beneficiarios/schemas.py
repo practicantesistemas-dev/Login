@@ -77,7 +77,7 @@ class TitularUpdate(BaseModel):
 
 
 class TitularActivar(BaseModel):
-    FECHA_INGRESO: Optional[date] = None
+    FECHA_INGRESO: date
 
 
 class ActivacionTitularResultado(BaseModel):
@@ -117,6 +117,10 @@ class BeneficiarioDetalle(BaseModel):
     FECHA_INGRESO: Optional[str] = None
     EMPRESA: Optional[str] = None
     ESTADO: Optional[str] = None
+
+
+class BeneficiarioActivar(BaseModel):
+    FECHA_INGRESO: date
 
 
 class ActivacionBeneficiarioResultado(BaseModel):

@@ -6,6 +6,7 @@ from app.modules.integraciones.titulares_beneficiarios.dependencies import (
 from app.modules.integraciones.titulares_beneficiarios.schemas import (
     ActivacionBeneficiarioResultado,
     ActivacionTitularResultado,
+    BeneficiarioActivar,
     BeneficiarioDetalle,
     BeneficiarioUpdate,
     DesactivacionBeneficiarioResultado,
@@ -84,9 +85,10 @@ def update_beneficiario(
 def activar_beneficiario(
     id_titular: int,
     id_beneficiario: int,
+    data: BeneficiarioActivar,
     service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
 ) -> ActivacionBeneficiarioResultado:
-    return service.activar_beneficiario(id_titular, id_beneficiario)
+    return service.activar_beneficiario(id_titular, id_beneficiario, data.FECHA_INGRESO)
 
 
 @router.post(
@@ -121,7 +123,7 @@ def update_titular(
 @router.post("/{id_titular}/activar", response_model=ActivacionTitularResultado)
 def activar_titular(
     id_titular: int,
-    data: TitularActivar = TitularActivar(),
+    data: TitularActivar,
     service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
 ) -> ActivacionTitularResultado:
     return service.activar_titular(id_titular, data.FECHA_INGRESO)
