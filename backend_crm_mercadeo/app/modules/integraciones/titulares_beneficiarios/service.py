@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.modules.integraciones.titulares_beneficiarios.exceptions import (
     BeneficiarioNotFoundError,
+    CupoBeneficiariosExcedidoError,
     DocumentoDuplicadoError,
     TitularInactivoError,
     TitularNotFoundError,
@@ -18,8 +19,10 @@ from app.modules.integraciones.titulares_beneficiarios.repository import (
 from app.modules.integraciones.titulares_beneficiarios.schemas import (
     ActivacionBeneficiarioResultado,
     ActivacionTitularResultado,
+    BeneficiarioCrear,
     BeneficiarioDetalle,
     BeneficiarioUpdate,
+    CreacionBeneficiarioResultado,
     CreacionTitularResultado,
     DesactivacionBeneficiarioResultado,
     DesactivacionTitularResultado,
@@ -84,6 +87,49 @@ class TitularesBeneficiariosService:
         fila = self.repository.obtener_titular(id_titular)
         return CreacionTitularResultado(
             titular=TitularDetalle(**fila),
+            usuario_servinte_creado=usuario_creado,
+            marcado_en_incle=marcado_incle,
+        )
+
+    def crear_beneficiario(
+        self, id_titular: int, data: BeneficiarioCrear
+    ) -> CreacionBeneficiarioResultado:
+        titular = self.repository.obtener_titular(id_titular)
+        if titular is None:
+            raise TitularNotFoundError(id_titular)
+        if titular["ESTADO"] != ESTADO_ACTIVO:
+            raise TitularInactivoError(id_titular, accion="crear el beneficiario")
+
+        duplicado = self.repository.existe_documento(data.TIPO_DOCUMENTO, data.DOCUMENTO)
+        if duplicado is not None:
+            raise DocumentoDuplicadoError(data.DOCUMENTO, duplicado)
+
+        cantidad_actual = self.repository.contar_beneficiarios(id_titular)
+        cupo = self.repository.cupo_beneficiarios_titular(id_titular)
+        if cantidad_actual >= cupo:
+            raise CupoBeneficiariosExcedidoError(id_titular)
+
+        fecha_ingreso = self.repository.obtener_fecha_ingreso_titular(id_titular)
+        datos = data.model_dump()
+        id_beneficiario = self.repository.crear_beneficiario(
+            id_titular, datos, fecha_ingreso, cantidad_actual + 1, titular["TIPO_PLAN"]
+        )
+
+        usuario_creado = self.legacy_repository.crear_usuario_servinte(
+            data.TIPO_DOCUMENTO, data.DOCUMENTO, data.NOMBRE1, data.NOMBRE2,
+            data.APELLIDO1, data.APELLIDO2,
+        )
+        nombre_completo = " ".join(
+            parte for parte in [data.NOMBRE1, data.NOMBRE2, data.APELLIDO1, data.APELLIDO2]
+            if parte
+        )
+        marcado_incle = self.legacy_repository.marcar_nuevo_beneficiario_incle(
+            data.TIPO_DOCUMENTO, data.DOCUMENTO, nombre_completo
+        )
+
+        fila = self.repository.obtener_beneficiario(id_titular, id_beneficiario)
+        return CreacionBeneficiarioResultado(
+            beneficiario=BeneficiarioDetalle(**fila),
             usuario_servinte_creado=usuario_creado,
             marcado_en_incle=marcado_incle,
         )

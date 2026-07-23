@@ -7,8 +7,10 @@ from app.modules.integraciones.titulares_beneficiarios.schemas import (
     ActivacionBeneficiarioResultado,
     ActivacionTitularResultado,
     BeneficiarioActivar,
+    BeneficiarioCrear,
     BeneficiarioDetalle,
     BeneficiarioUpdate,
+    CreacionBeneficiarioResultado,
     CreacionTitularResultado,
     DesactivacionBeneficiarioResultado,
     DesactivacionTitularResultado,
@@ -69,6 +71,19 @@ def get_beneficiarios(
     service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
 ) -> list[BeneficiarioDetalle]:
     return service.listar_beneficiarios(id_titular)
+
+
+@router.post(
+    "/{id_titular}/beneficiarios",
+    response_model=CreacionBeneficiarioResultado,
+    status_code=status.HTTP_201_CREATED,
+)
+def crear_beneficiario(
+    id_titular: int,
+    data: BeneficiarioCrear,
+    service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
+) -> CreacionBeneficiarioResultado:
+    return service.crear_beneficiario(id_titular, data)
 
 
 @router.patch("/{id_titular}/beneficiarios/{id_beneficiario}", response_model=BeneficiarioDetalle)

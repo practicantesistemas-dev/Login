@@ -70,6 +70,27 @@ CAMPOS_TITULAR_CREACION = {
     "PLAN_NOMBRE": "plan_nombre",
 }
 
+CAMPOS_BENEFICIARIO_CREACION = {
+    "TIPO_DOCUMENTO": "tipo",
+    "DOCUMENTO": "documento",
+    "NOMBRE1": "nombre1",
+    "NOMBRE2": "nombre2",
+    "APELLIDO1": "apellido1",
+    "APELLIDO2": "apellido2",
+    "FECHA_NACIMIENTO": "fecha_nacimiento",
+    "SEXO": "sexo",
+    "DIRECCION": "direccion",
+    "CIUDAD": "ciudad",
+    "DEPARTAMENTO": "departamento",
+    "CORREO": "correo",
+    "TELEFONO": "telefono",
+    "EMPRESA": "empresa",
+    "EPS": "eps",
+    "OTRAEPS": "otraeps",
+    "PLAN_SALUD": "plan_salud",
+    "PLAN_NOMBRE": "plan_nombre",
+}
+
 CAMPOS_BENEFICIARIO_EDITABLES = {
     "TIPO_DOCUMENTO": "tipo",
     "DOCUMENTO": "documento",
@@ -167,6 +188,10 @@ class TitularesBeneficiariosRepository:
 
         fila = self.db.execute(stmt).mappings().first()
         return dict(fila) if fila is not None else None
+
+    def obtener_fecha_ingreso_titular(self, id_titular: int) -> date | None:
+        titular = self.db.get(PlanLiga, id_titular)
+        return titular.fecha_ingreso if titular else None
 
     def listar_beneficiarios(self, id_titular: int) -> list[dict]:
         stmt = (
@@ -435,6 +460,56 @@ class TitularesBeneficiariosRepository:
         self.db.commit()
         self.db.refresh(titular)
         return titular.id
+
+    def contar_beneficiarios(self, id_titular: int) -> int:
+        stmt = select(func.count()).select_from(PlanLigaBeneficiario).where(
+            PlanLigaBeneficiario.planliga_id == id_titular
+        )
+        return self.db.scalar(stmt) or 0
+
+    def cupo_beneficiarios_titular(self, id_titular: int) -> int:
+        stmt = (
+            select(
+                func.coalesce(
+                    func.sum(
+                        func.coalesce(Servicio.max_beneficiarios, 0)
+                        + func.coalesce(Servicio.beneficiarios_adicionales, 0)
+                    ),
+                    0,
+                )
+            )
+            .select_from(TitularServicio)
+            .join(Servicio, Servicio.id == TitularServicio.servicio_id)
+            .where(TitularServicio.planliga_id == id_titular)
+        )
+        return self.db.scalar(stmt) or 0
+
+    def crear_beneficiario(
+        self,
+        id_titular: int,
+        datos: dict,
+        fecha_ingreso: date,
+        orden: int,
+        tipo_plan: str | None,
+    ) -> int:
+        campos = {
+            atributo: datos.get(campo)
+            for campo, atributo in CAMPOS_BENEFICIARIO_CREACION.items()
+        }
+        beneficiario = PlanLigaBeneficiario(
+            **campos,
+            planliga_id=id_titular,
+            tipo_plan=tipo_plan,
+            orden=orden,
+            estado=ESTADO_ACTIVO,
+            tipo_afiliado="2",
+            fecha_ingreso=fecha_ingreso,
+            fecha_registro=datetime.now(),
+        )
+        self.db.add(beneficiario)
+        self.db.commit()
+        self.db.refresh(beneficiario)
+        return beneficiario.id
 
     def asociar_servicio(self, id_titular: int, servicio_id: int) -> None:
         self.db.add(

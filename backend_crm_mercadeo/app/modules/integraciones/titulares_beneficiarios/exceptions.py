@@ -12,10 +12,10 @@ class BeneficiarioNotFoundError(NotFoundError):
 
 
 class TitularInactivoError(ConflictError):
-    def __init__(self, id_titular: int) -> None:
+    def __init__(self, id_titular: int, accion: str = "activar el beneficiario") -> None:
         super().__init__(
             detail=(
-                f"No se pudo activar el beneficiario ya que el titular "
+                f"No se pudo {accion} ya que el titular "
                 f"{id_titular} esta inactivo"
             )
         )
@@ -27,5 +27,15 @@ class DocumentoDuplicadoError(ConflictError):
             detail=(
                 f"El documento {documento} ya esta registrado como "
                 f"{tipo_registro.lower()}"
+            )
+        )
+
+
+class CupoBeneficiariosExcedidoError(ConflictError):
+    def __init__(self, id_titular: int) -> None:
+        super().__init__(
+            detail=(
+                f"El titular {id_titular} ya alcanzo el cupo maximo de "
+                f"beneficiarios de su plan"
             )
         )

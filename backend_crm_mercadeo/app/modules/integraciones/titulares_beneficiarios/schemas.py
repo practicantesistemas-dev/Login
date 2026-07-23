@@ -155,6 +155,33 @@ class BeneficiarioDetalle(BaseModel):
     ESTADO: Optional[str] = None
 
 
+class BeneficiarioCrear(BaseModel):
+    TIPO_DOCUMENTO: str
+    DOCUMENTO: str
+    NOMBRE1: str
+    NOMBRE2: Optional[str] = None
+    APELLIDO1: str
+    APELLIDO2: Optional[str] = None
+    FECHA_NACIMIENTO: date
+    SEXO: Optional[str] = None
+    DIRECCION: Optional[str] = None
+    CIUDAD: str
+    DEPARTAMENTO: str
+    CORREO: Optional[str] = None
+    TELEFONO: Optional[str] = None
+    EMPRESA: Optional[str] = None
+    EPS: Optional[str] = None
+    OTRAEPS: Optional[str] = None
+    PLAN_SALUD: Optional[str] = None
+    PLAN_NOMBRE: Optional[str] = None
+
+
+class CreacionBeneficiarioResultado(BaseModel):
+    beneficiario: BeneficiarioDetalle
+    usuario_servinte_creado: bool
+    marcado_en_incle: bool
+
+
 class BeneficiarioActivar(BaseModel):
     FECHA_INGRESO: date
 

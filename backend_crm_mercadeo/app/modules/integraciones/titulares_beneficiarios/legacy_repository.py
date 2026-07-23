@@ -168,3 +168,41 @@ class LegacyRepository:
 
         self.db.commit()
         return True
+
+    def marcar_nuevo_beneficiario_incle(
+        self, tipo: str, documento: str, nombre_completo: str
+    ) -> bool:
+        """Inscribe por primera vez al beneficiario en INCLE + sedes (01, 03, 04).
+        Retorna True si se marco, False si ya estaba marcado."""
+        if self.existe_marca_incle(tipo, documento):
+            return False
+
+        stmt = text(
+            """
+            INSERT INTO INCLE (CLENRO, CLECED, CLETID, CLENOM, CLEDIR, CLETEL, CLEMED, CLEOBS, CLEEST, CLEUAD, CLEFAD)
+            SELECT
+                SQ_INCLE_NRO.NEXTVAL, DOCUMENTO, TIPO, :nombre_completo,
+                DIRECCION, TELEFONO, '01', 'PLAN LIGA', '0', 'dalopez', SYSDATE
+            FROM INTRANET_PLANLIGA_BENEFICIARIO
+            WHERE DOCUMENTO = :documento AND TIPO = :tipo
+            """
+        )
+        resultado = self.db.execute(
+            stmt, {"nombre_completo": nombre_completo, "documento": documento, "tipo": tipo}
+        )
+        if resultado.rowcount == 0:
+            return False
+
+        for codigo in ("01", "03", "04"):
+            self.db.execute(
+                text(
+                    """
+                    INSERT INTO INCLEEAD (CLEEADTID, CLEEADCED, CLEEADEAD, CLEEADIND)
+                    VALUES (:tipo, :documento, :codigo, 'S')
+                    """
+                ),
+                {"tipo": tipo, "documento": documento, "codigo": codigo},
+            )
+
+        self.db.commit()
+        return True
