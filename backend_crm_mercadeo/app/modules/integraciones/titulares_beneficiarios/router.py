@@ -42,13 +42,13 @@ def get_listado(
     limit: int = 6,
     offset: int = 0,
     estado: str | None = None,
-    plan: str | None = None,
+    tipo_plan_id: int | None = None,
     sexo: str | None = None,
     edad: str | None = None,
     busqueda: str | None = None,
     service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
 ) -> ListadoTitularesPaginado:
-    return service.listar_titulares(limit, offset, estado, plan, sexo, edad, busqueda)
+    return service.listar_titulares(limit, offset, estado, tipo_plan_id, sexo, edad, busqueda)
 
 
 @router.get("/planes", response_model=list[PlanItem])

@@ -2,13 +2,12 @@
 Script de limpieza de datos de prueba del CRM de Mercadeo.
 
 Elimina todo el contenido de las tablas propias mercadeo_crm_* (proveedores,
-actividad, servicios, embudos, etapas, empresas, contactos, etiquetas,
+actividad, embudos, etapas, empresas, contactos, etiquetas,
 contacto_etiqueta, campanas, segmentos, campana_segmento, oportunidades,
-bitacora, titular_servicios, importaciones) en el orden correcto segun sus
-llaves foraneas.
+bitacora, importaciones) en el orden correcto segun sus llaves foraneas.
 
-Las tablas intranet_usuarios e intranet_planliga son externas (modulos
-Login/Integraciones) y NUNCA se tocan.
+Las tablas intranet_usuarios, intranet_planliga e intranet_planliga_tipo_plan
+son externas (modulos Login/Integraciones) y NUNCA se tocan.
 
 Uso (desde backend_crm_mercadeo, con el venv activado):
 
@@ -42,18 +41,16 @@ from app.models import (
     Oportunidad,
     Proveedor,
     Segmento,
-    Servicio,
-    TitularServicio,
 )
 
 LOG_PATH = Path(__file__).resolve().parent / "cleanup_data_log.txt"
 
 # Orden de borrado: hijos antes que padres (inverso al orden de insercion
 # usado en seed_data.py). Solo tablas propias de mercadeo_crm_*;
-# intranet_usuarios e intranet_planliga son externas y nunca se tocan.
+# intranet_usuarios, intranet_planliga e intranet_planliga_tipo_plan son
+# externas y nunca se tocan.
 CLEANUP_MODELS = [
     Importacion,
-    TitularServicio,
     Bitacora,
     Oportunidad,
     CampanaSegmento,
@@ -65,7 +62,6 @@ CLEANUP_MODELS = [
     Empresa,
     EtapaEmbudo,
     Embudo,
-    Servicio,
     Actividad,
     Proveedor,
 ]

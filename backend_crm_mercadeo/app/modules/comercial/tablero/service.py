@@ -12,7 +12,7 @@ from app.modules.comercial.tablero.schemas import (
     KpiItem,
     Periodo,
     ResumenDashboard,
-    TopServicioItem,
+    TopPlanItem,
 )
 
 
@@ -109,15 +109,15 @@ class TableroService:
             for etapa, cantidad in filas
         ]
 
-    def top_servicios(self, limit: int = 4) -> list[TopServicioItem]:
-        filas = self.repository.top_servicios(limit)
-        total = sum(cantidad for _, cantidad in filas)
+    def top_planes(self, limit: int = 4) -> list[TopPlanItem]:
+        filas = self.repository.top_planes(limit)
+        total = sum(fila.total for fila in filas)
         return [
-            TopServicioItem(
-                servicio_id=servicio.id,
-                nombre=servicio.nombre,
-                solicitudes=cantidad,
-                porcentaje=round(cantidad / total * 100, 1) if total else 0.0,
+            TopPlanItem(
+                plan_id=fila.plan_id,
+                nombre=fila.nombre,
+                solicitudes=fila.total,
+                porcentaje=round(fila.total / total * 100, 1) if total else 0.0,
             )
-            for servicio, cantidad in filas
+            for fila in filas
         ]

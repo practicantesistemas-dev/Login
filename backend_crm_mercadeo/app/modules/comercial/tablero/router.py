@@ -7,7 +7,7 @@ from app.modules.comercial.tablero.schemas import (
     EtapaEmbudoItem,
     Periodo,
     ResumenDashboard,
-    TopServicioItem,
+    TopPlanItem,
 )
 from app.modules.comercial.tablero.service import TableroService
 
@@ -55,9 +55,9 @@ def get_embudo_comercial(
     return service.embudo_comercial(embudo_id=embudo_id, periodo=periodo)
 
 
-@router.get("/top-servicios", response_model=list[TopServicioItem])
-def get_top_servicios(
+@router.get("/top-planes", response_model=list[TopPlanItem])
+def get_top_planes(
     limit: int = Query(4, ge=1, le=20),
     service: TableroService = Depends(get_tablero_service),
-) -> list[TopServicioItem]:
-    return service.top_servicios(limit=limit)
+) -> list[TopPlanItem]:
+    return service.top_planes(limit=limit)

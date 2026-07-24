@@ -2,18 +2,18 @@
 Script de datos de prueba para el CRM de Mercadeo.
 
 Inserta un pequeno conjunto de registros de ejemplo en las tablas
-mercadeo_crm_* (proveedores, servicios, empresas, contactos, etiquetas,
-campanas, segmentos, oportunidades, bitacora, titular_servicios,
-importaciones, etc.) respetando el orden de dependencias por llave
-foranea.
+mercadeo_crm_* (proveedores, empresas, contactos, etiquetas,
+campanas, segmentos, oportunidades, bitacora, importaciones, etc.)
+respetando el orden de dependencias por llave foranea.
 
-Las tablas intranet_usuarios e intranet_planliga son externas (modulos
-Login/Integraciones) y NO se modifican: el script solo lee el primer
-usuario y el primer titular de plan liga existentes para usarlos como
-responsable_id / usuario_id / titular_id en los registros de prueba, de
-forma que quede una relacion real (ej. una bitacora o una etiqueta
-asociada a un usuario). Si no encuentra ninguno, deja esas columnas en
-NULL (son nullable) y lo indica en el log.
+Las tablas intranet_usuarios, intranet_planliga e
+intranet_planliga_tipo_plan son externas (modulos Login/Integraciones) y
+NO se modifican: el script solo lee el primer usuario, el primer titular
+de plan liga y el primer tipo de plan existentes para usarlos como
+responsable_id / usuario_id / titular_id / servicio_id en los registros
+de prueba, de forma que quede una relacion real (ej. una bitacora o una
+etiqueta asociada a un usuario). Si no encuentra ninguno, deja esas
+columnas en NULL (son nullable) y lo indica en el log.
 
 Uso (desde backend_crm_mercadeo, con el venv activado):
 
@@ -47,10 +47,9 @@ from app.models import (
     Importacion,
     Oportunidad,
     PlanLiga,
+    PlanLigaTipoPlan,
     Proveedor,
     Segmento,
-    Servicio,
-    TitularServicio,
     Usuario,
 )
 from app.shared.enums import EtapaEmbudoNombre
@@ -58,11 +57,11 @@ from app.shared.enums import EtapaEmbudoNombre
 LOG_PATH = Path(__file__).resolve().parent / "seed_data_log.txt"
 
 # Orden de borrado: hijos antes que padres (inverso al orden de insercion).
-# Solo tablas propias de mercadeo_crm_*; intranet_usuarios e
-# intranet_planliga son externas y nunca se tocan.
+# Solo tablas propias de mercadeo_crm_*; intranet_usuarios,
+# intranet_planliga e intranet_planliga_tipo_plan son externas y nunca se
+# tocan.
 CLEANUP_MODELS = [
     Importacion,
-    TitularServicio,
     Bitacora,
     Oportunidad,
     CampanaSegmento,
@@ -74,7 +73,6 @@ CLEANUP_MODELS = [
     Empresa,
     EtapaEmbudo,
     Embudo,
-    Servicio,
     Actividad,
     Proveedor,
 ]
@@ -106,6 +104,9 @@ def main() -> None:
 
         usuario_id = db.scalar(select(Usuario.id).order_by(Usuario.id).limit(1))
         planliga_id = db.scalar(select(PlanLiga.id).order_by(PlanLiga.id).limit(1))
+        tipo_plan_id = db.scalar(
+            select(PlanLigaTipoPlan.id).order_by(PlanLigaTipoPlan.id).limit(1)
+        )
 
         if usuario_id is None:
             log("AVISO: no se encontro ningun registro en intranet_usuarios; "
@@ -118,6 +119,12 @@ def main() -> None:
                 "los campos titular_id/plan_liga_titular_id/planliga_id quedaran en NULL.")
         else:
             log(f"Usando intranet_planliga.id = {planliga_id} para las relaciones de titular.")
+
+        if tipo_plan_id is None:
+            log("AVISO: no se encontro ningun registro en intranet_planliga_tipo_plan; "
+                "el campo servicio_id de oportunidades quedara en NULL.")
+        else:
+            log(f"Usando intranet_planliga_tipo_plan.id = {tipo_plan_id} para las relaciones de plan.")
 
         log("")
 
@@ -157,78 +164,6 @@ def main() -> None:
             proveedor_id=proveedor2.id,
         )
         db.add_all([actividad1, actividad2])
-
-        # --- Servicios (responsable_id -> intranet_usuarios) ------------
-        # Plan Liga es un unico servicio; sus variantes (particulares y
-        # empresariales) se representan como categorias de ese mismo servicio.
-        servicio1 = Servicio(
-            nombre="Plan Liga",
-            categoria="6 Beneficiarios",
-            tipo="Particular",
-            max_beneficiarios=6,
-            estado=True,
-            descripcion="Plan Liga particular con 6 beneficiarios y un titular",
-            responsable_id=usuario_id,
-        )
-        servicio2 = Servicio(
-            nombre="Plan Liga",
-            categoria="Dos Adicionales",
-            tipo="Particular",
-            beneficiarios_adicionales=2,
-            estado=True,
-            descripcion="Plan Liga particular: suma dos beneficiarios adicionales al plan base",
-            responsable_id=usuario_id,
-        )
-        servicio3 = Servicio(
-            nombre="Plan Liga",
-            categoria="Empresarial Individual",
-            tipo="Empresarial",
-            max_beneficiarios=1,
-            estado=True,
-            descripcion="Plan Liga empresarial individual",
-            responsable_id=usuario_id,
-        )
-        servicio4 = Servicio(
-            nombre="Plan Liga",
-            categoria="Empresarial x3",
-            tipo="Empresarial",
-            max_beneficiarios=3,
-            estado=True,
-            descripcion="Plan Liga empresarial para 3 beneficiarios",
-            responsable_id=usuario_id,
-        )
-        servicio5 = Servicio(
-            nombre="Plan Liga",
-            categoria="5 Beneficiarios",
-            tipo="Particular",
-            max_beneficiarios=5,
-            estado=True,
-            descripcion="Plan Liga particular con 5 beneficiarios y un titular",
-            responsable_id=usuario_id,
-        )
-        servicio6 = Servicio(
-            nombre="Plan Liga",
-            categoria="Empresarial 1 Adicional",
-            tipo="Empresarial",
-            beneficiarios_adicionales=1,
-            estado=True,
-            descripcion="Plan Liga empresarial: suma 1 beneficiario adicional al plan base",
-            responsable_id=usuario_id,
-        )
-        servicio7 = Servicio(
-            nombre="Plan Liga",
-            categoria="1 Adicional",
-            tipo="Particular",
-            beneficiarios_adicionales=1,
-            estado=True,
-            descripcion="Plan Liga particular: suma 1 beneficiario adicional al plan base",
-            responsable_id=usuario_id,
-        )
-        servicios_plan_liga = [
-            servicio1, servicio2, servicio3, servicio4, servicio5, servicio6, servicio7,
-        ]
-        db.add_all(servicios_plan_liga)
-        db.flush()
 
         # --- Embudos y Etapas --------------------------------------------
         embudo1 = Embudo(
@@ -412,7 +347,7 @@ def main() -> None:
         oportunidad1 = Oportunidad(
             empresa_id=empresa1.id,
             contacto_id=contacto1.id,
-            servicio_id=servicio1.id,
+            servicio_id=tipo_plan_id,
             etapa_id=etapa_cotizacion.id,
             responsable_id=usuario_id,
             valor=3500000.0,
@@ -423,7 +358,7 @@ def main() -> None:
         oportunidad2 = Oportunidad(
             empresa_id=empresa2.id,
             contacto_id=contacto2.id,
-            servicio_id=servicio2.id,
+            servicio_id=tipo_plan_id,
             etapa_id=etapa_primer_contacto.id,
             responsable_id=usuario_id,
             valor=1200000.0,
@@ -459,18 +394,6 @@ def main() -> None:
         )
         db.add_all([bitacora1, bitacora2])
 
-        # --- Titular de servicios (planliga_id, servicio_id) --------------
-        # Un titular no puede tener asignada mas de una variante de un mismo
-        # servicio (Plan Liga es un unico servicio); se le asigna una sola.
-        titular_servicio1 = TitularServicio(
-            planliga_id=planliga_id,
-            servicio_id=servicio1.id,
-            fecha_asignacion=ahora,
-            estado="Activo",
-            observaciones="Asignacion de prueba",
-        )
-        db.add(titular_servicio1)
-
         # --- Importaciones (usuario_id) ------------------------------------
         importacion1 = Importacion(
             usuario_id=usuario_id,
@@ -487,11 +410,11 @@ def main() -> None:
         # --- Refrescar para tener los ids generados por la BD -------------
         for obj in [
             proveedor1, proveedor2, actividad1, actividad2,
-            *servicios_plan_liga, embudo1, *etapas,
+            embudo1, *etapas,
             empresa1, empresa2, contacto1, contacto2, contacto3,
             etiqueta1, etiqueta2, campana1, campana2, segmento1, segmento2,
             oportunidad1, oportunidad2, bitacora1, bitacora2,
-            titular_servicio1, importacion1,
+            importacion1,
         ]:
             db.refresh(obj)
 
@@ -501,8 +424,6 @@ def main() -> None:
         log(f"[mercadeo_crm_proveedores] id={proveedor2.id} nombre={proveedor2.nombre!r}")
         log(f"[mercadeo_crm_actividad]   id={actividad1.id} nombre={actividad1.nombre!r} proveedor_id={actividad1.proveedor_id}")
         log(f"[mercadeo_crm_actividad]   id={actividad2.id} nombre={actividad2.nombre!r} proveedor_id={actividad2.proveedor_id}")
-        for servicio in servicios_plan_liga:
-            log(f"[mercadeo_crm_servicios]   id={servicio.id} nombre={servicio.nombre!r} categoria={servicio.categoria!r} tipo={servicio.tipo!r} max_beneficiarios={servicio.max_beneficiarios} beneficiarios_adicionales={servicio.beneficiarios_adicionales} responsable_id={servicio.responsable_id}")
         log(f"[mercadeo_crm_embudos]     id={embudo1.id} nombre={embudo1.nombre!r}")
         for etapa in etapas:
             log(f"[mercadeo_crm_etapas_embudo] id={etapa.id} nombre={etapa.nombre!r} orden={etapa.orden} embudo_id={etapa.embudo_id}")
@@ -525,7 +446,6 @@ def main() -> None:
         log(f"[mercadeo_crm_oportunidades] id={oportunidad2.id} empresa_id={oportunidad2.empresa_id} contacto_id={oportunidad2.contacto_id} servicio_id={oportunidad2.servicio_id} responsable_id={oportunidad2.responsable_id} plan_liga_titular_id={oportunidad2.plan_liga_titular_id}")
         log(f"[mercadeo_crm_bitacora]    id={bitacora1.id} tipo={bitacora1.tipo!r} usuario_id={bitacora1.usuario_id} titular_id={bitacora1.titular_id} oportunidad_id={bitacora1.oportunidad_id}")
         log(f"[mercadeo_crm_bitacora]    id={bitacora2.id} tipo={bitacora2.tipo!r} usuario_id={bitacora2.usuario_id} titular_id={bitacora2.titular_id} oportunidad_id={bitacora2.oportunidad_id}")
-        log(f"[mercadeo_crm_titular_servicios] id={titular_servicio1.id} planliga_id={titular_servicio1.planliga_id} servicio_id={titular_servicio1.servicio_id}")
         log(f"[mercadeo_crm_importaciones] id={importacion1.id} archivo={importacion1.archivo!r} usuario_id={importacion1.usuario_id}")
 
     except Exception:

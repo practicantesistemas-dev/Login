@@ -10,8 +10,7 @@ from app.models import (
     EtapaEmbudo,
     Oportunidad,
     PlanLiga,
-    Servicio,
-    TitularServicio,
+    PlanLigaTipoPlan,
     Usuario,
 )
 from app.shared.enums import EstadoBitacora, TipoContacto
@@ -62,9 +61,10 @@ class TableroRepository:
         return self.db.scalar(stmt) or 0
 
     def contar_servicios_plan_liga_activos(self, desde: datetime | None, hasta: datetime | None) -> int:
-        stmt = select(func.count(func.distinct(TitularServicio.servicio_id))).where(
-            func.lower(TitularServicio.estado) == ESTADO_ACTIVO,
-            *_rango(TitularServicio.fecha_asignacion, desde, hasta),
+        stmt = select(func.count(func.distinct(PlanLiga.tipo_plan_id))).where(
+            PlanLiga.estado == ESTADO_PLANLIGA_ACTIVO,
+            PlanLiga.tipo_plan_id.isnot(None),
+            *_rango(PlanLiga.fecha_registro, desde, hasta),
         )
         return self.db.scalar(stmt) or 0
 
@@ -141,19 +141,18 @@ class TableroRepository:
             stmt = stmt.where(EtapaEmbudo.embudo_id == embudo_id)
         return list(self.db.execute(stmt).all())
 
-    def top_servicios(self, limit: int) -> list[tuple[Servicio, int]]:
-        conteo = (
-            select(
-                TitularServicio.servicio_id.label("servicio_id"),
-                func.count(TitularServicio.id).label("total"),
-            )
-            .group_by(TitularServicio.servicio_id)
-            .subquery()
-        )
+    def top_planes(self, limit: int) -> list:
+        nombre_plan = func.coalesce(PlanLigaTipoPlan.nombre, "Plan Estandar")
         stmt = (
-            select(Servicio, conteo.c.total)
-            .join(conteo, conteo.c.servicio_id == Servicio.id)
-            .order_by(conteo.c.total.desc())
+            select(
+                PlanLiga.tipo_plan_id.label("plan_id"),
+                nombre_plan.label("nombre"),
+                func.count(PlanLiga.id).label("total"),
+            )
+            .select_from(PlanLiga)
+            .outerjoin(PlanLigaTipoPlan, PlanLigaTipoPlan.id == PlanLiga.tipo_plan_id)
+            .group_by(PlanLiga.tipo_plan_id, PlanLigaTipoPlan.nombre)
+            .order_by(func.count(PlanLiga.id).desc())
             .limit(limit)
         )
         return list(self.db.execute(stmt).all())

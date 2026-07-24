@@ -66,11 +66,10 @@ class TitularesBeneficiariosService:
         if duplicado is not None:
             raise DocumentoDuplicadoError(data.DOCUMENTO, duplicado)
 
-        datos = data.model_dump(exclude={"FECHA_INGRESO", "SERVICIO_ID"})
+        datos = data.model_dump(exclude={"FECHA_INGRESO"})
         self.legacy_repository.crear_preplanliga(datos)
 
         id_titular = self.repository.crear_titular(datos, data.FECHA_INGRESO)
-        self.repository.asociar_servicio(id_titular, data.SERVICIO_ID)
 
         usuario_creado = self.legacy_repository.crear_usuario_servinte(
             data.TIPO_DOCUMENTO, data.DOCUMENTO, data.NOMBRE1, data.NOMBRE2,
@@ -226,15 +225,15 @@ class TitularesBeneficiariosService:
         limit: int = 6,
         offset: int = 0,
         estado: str | None = None,
-        plan: str | None = None,
+        tipo_plan_id: int | None = None,
         sexo: str | None = None,
         edad: str | None = None,
         busqueda: str | None = None,
     ) -> ListadoTitularesPaginado:
         filas = self.repository.listar_titulares(
-            limit, offset, estado, plan, sexo, edad, busqueda
+            limit, offset, estado, tipo_plan_id, sexo, edad, busqueda
         )
-        total = self.repository.contar_titulares(estado, plan, sexo, edad, busqueda)
+        total = self.repository.contar_titulares(estado, tipo_plan_id, sexo, edad, busqueda)
         return ListadoTitularesPaginado(
             items=[ListadoTitulares(**fila) for fila in filas],
             total=total,
@@ -252,7 +251,7 @@ class TitularesBeneficiariosService:
                     else servicio.nombre
                 ),
                 TIPO=servicio.tipo,
-                MAX_BENEFICIARIOS=servicio.max_beneficiarios,
+                MAX_BENEFICIARIOS=servicio.beneficiarios,
                 BENEFICIARIOS_ADICIONALES=servicio.beneficiarios_adicionales,
                 DESCRIPCION=servicio.descripcion,
                 ESTADO=servicio.estado,

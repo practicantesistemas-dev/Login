@@ -33,8 +33,8 @@ class ActividadRecienteItem(BaseModel):
     usuario_nombre: str | None = None
 
 
-class TopServicioItem(BaseModel):
-    servicio_id: int
+class TopPlanItem(BaseModel):
+    plan_id: int | None
     nombre: str
     solicitudes: int
     porcentaje: float

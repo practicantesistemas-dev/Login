@@ -1,3 +1,3 @@
-from app.models import Servicio
+from app.models import PlanLigaTipoPlan
 
-__all__ = ["Servicio"]
+__all__ = ["PlanLigaTipoPlan"]

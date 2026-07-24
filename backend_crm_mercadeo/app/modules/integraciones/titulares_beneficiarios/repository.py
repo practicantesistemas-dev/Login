@@ -13,11 +13,19 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Session
 
-from app.models import PlanLiga, PlanLigaBeneficiario, Servicio, TitularServicio
+from app.models import PlanLiga, PlanLigaBeneficiario, PlanLigaTipoPlan
 
 ESTADO_ACTIVO = "A"
 ESTADO_INACTIVO = "I"
 ESTADOS_FILTRO = {"activo": ESTADO_ACTIVO, "inactivo": ESTADO_INACTIVO}
+
+# El Plan Estandar (base implicita, sin fila propia en el catalogo) es de 4
+# beneficiarios + 1 titular. Cuando un tipo_plan tiene beneficiarios_adicionales
+# (> 0), esos adicionales se suman sobre esa base fija, no sobre la columna
+# BENEFICIARIOS de esa fila (que en los planes "X Adicional" no representa el
+# cupo total, sino solo el incremento). Si no tiene adicionales, el cupo es
+# directamente el valor de BENEFICIARIOS de ese tipo_plan.
+BENEFICIARIOS_PLAN_ESTANDAR = 4
 
 RANGOS_EDAD: dict[str, tuple[int, int | None]] = {
     "0-17": (0, 17),
@@ -49,6 +57,7 @@ CAMPOS_TITULAR_EDITABLES = {
 
 CAMPOS_TITULAR_CREACION = {
     "TIPO_PLAN": "tipo_plan",
+    "TIPO_PLAN_ID": "tipo_plan_id",
     "TIPO_DOCUMENTO": "tipo",
     "DOCUMENTO": "documento",
     "NOMBRE1": "nombre1",
@@ -120,10 +129,24 @@ def _rango_fecha_nacimiento(edad: str, hoy: date) -> tuple[date | None, date | N
 
 
 def _nombre_plan() -> ColumnElement:
-    """Nombre del servicio + su categoria (ej. 'Plan Liga - 6 Beneficiarios')."""
-    return Servicio.nombre + case(
-        (Servicio.categoria.isnot(None), literal_column("' - '") + Servicio.categoria),
+    """Nombre del tipo de plan + su categoria (ej. 'Plan Liga - 6 Beneficiarios')."""
+    return PlanLigaTipoPlan.nombre + case(
+        (
+            PlanLigaTipoPlan.categoria.isnot(None),
+            literal_column("' - '") + PlanLigaTipoPlan.categoria,
+        ),
         else_=literal_column("''"),
+    )
+
+
+def _cupo_plan() -> ColumnElement:
+    """Cupo total de beneficiarios del tipo_plan (ver BENEFICIARIOS_PLAN_ESTANDAR)."""
+    return case(
+        (
+            PlanLigaTipoPlan.beneficiarios_adicionales > 0,
+            BENEFICIARIOS_PLAN_ESTANDAR + PlanLigaTipoPlan.beneficiarios_adicionales,
+        ),
+        else_=func.coalesce(PlanLigaTipoPlan.beneficiarios, 0),
     )
 
 
@@ -211,14 +234,14 @@ class TitularesBeneficiariosRepository:
         fila = self.db.execute(stmt).mappings().first()
         return dict(fila) if fila is not None else None
 
-    def listar_planes(self) -> list[Servicio]:
-        stmt = select(Servicio).order_by(Servicio.nombre)
+    def listar_planes(self) -> list[PlanLigaTipoPlan]:
+        stmt = select(PlanLigaTipoPlan).order_by(PlanLigaTipoPlan.nombre)
         return list(self.db.scalars(stmt))
 
     def listar_nombres_planes(self) -> list[dict]:
         stmt = (
-            select(Servicio.id.label("ID"), _nombre_plan().label("NOMBRE"))
-            .order_by(Servicio.nombre, Servicio.categoria)
+            select(PlanLigaTipoPlan.id.label("ID"), _nombre_plan().label("NOMBRE"))
+            .order_by(PlanLigaTipoPlan.nombre, PlanLigaTipoPlan.categoria)
         )
         return [dict(row) for row in self.db.execute(stmt).mappings().all()]
 
@@ -237,13 +260,12 @@ class TitularesBeneficiariosRepository:
     def _construir_condiciones(
         self,
         estado: str | None = None,
-        plan: str | None = None,
+        tipo_plan_id: int | None = None,
         sexo: str | None = None,
         edad: str | None = None,
         busqueda: str | None = None,
     ) -> list[ColumnElement]:
         estado = None if estado and estado.strip().lower() == "todos" else estado
-        plan = None if plan and plan.strip().lower() == "todos" else plan
         sexo = None if sexo and sexo.strip().lower() == "todos" else sexo
         edad = None if edad and edad.strip().lower() == "todos" else edad
 
@@ -254,16 +276,8 @@ class TitularesBeneficiariosRepository:
             if codigo:
                 condiciones.append(PlanLiga.estado == codigo)
 
-        if plan:
-            condiciones.append(
-                select(TitularServicio.id)
-                .join(Servicio, Servicio.id == TitularServicio.servicio_id)
-                .where(
-                    TitularServicio.planliga_id == PlanLiga.id,
-                    func.lower(_nombre_plan()) == plan.lower(),
-                )
-                .exists()
-            )
+        if tipo_plan_id:
+            condiciones.append(PlanLiga.tipo_plan_id == tipo_plan_id)
 
         if sexo:
             condiciones.append(func.upper(PlanLiga.sexo) == sexo.upper())
@@ -299,20 +313,14 @@ class TitularesBeneficiariosRepository:
     def contar_titulares(
         self,
         estado: str | None = None,
-        plan: str | None = None,
+        tipo_plan_id: int | None = None,
         sexo: str | None = None,
         edad: str | None = None,
         busqueda: str | None = None,
     ) -> int:
-        condiciones = self._construir_condiciones(estado, plan, sexo, edad, busqueda)
+        condiciones = self._construir_condiciones(estado, tipo_plan_id, sexo, edad, busqueda)
 
-        stmt = (
-            select(func.count(func.distinct(PlanLiga.id)))
-            .select_from(PlanLiga)
-            .outerjoin(TitularServicio, TitularServicio.planliga_id == PlanLiga.id)
-            .outerjoin(Servicio, Servicio.id == TitularServicio.servicio_id)
-            .where(*condiciones)
-        )
+        stmt = select(func.count()).select_from(PlanLiga).where(*condiciones)
         return self.db.scalar(stmt) or 0
 
     def listar_titulares(
@@ -320,12 +328,12 @@ class TitularesBeneficiariosRepository:
         limit: int = 6,
         offset: int = 0,
         estado: str | None = None,
-        plan: str | None = None,
+        tipo_plan_id: int | None = None,
         sexo: str | None = None,
         edad: str | None = None,
         busqueda: str | None = None,
     ) -> list[dict]:
-        condiciones = self._construir_condiciones(estado, plan, sexo, edad, busqueda)
+        condiciones = self._construir_condiciones(estado, tipo_plan_id, sexo, edad, busqueda)
 
         conteo_beneficiarios = func.coalesce(
             select(func.count())
@@ -334,9 +342,7 @@ class TitularesBeneficiariosRepository:
             .scalar_subquery(),
             0,
         )
-        cupo_plan = func.coalesce(Servicio.max_beneficiarios, 0) + func.coalesce(
-            Servicio.beneficiarios_adicionales, 0
-        )
+        cupo_plan = _cupo_plan()
 
         stmt = (
             select(
@@ -353,40 +359,20 @@ class TitularesBeneficiariosRepository:
                 PlanLiga.documento.label("DOCUMENTO"),
                 PlanLiga.tipo.label("TIPO_DOCUMENTO"),
                 PlanLiga.empresa.label("EMPRESA"),
-                func.listagg(_nombre_plan(), literal_column("' | '"))
-                .within_group(Servicio.nombre, Servicio.categoria)
-                .label("PLANES"),
-                func.listagg(
+                _nombre_plan().label("PLANES"),
+                (
                     cast(conteo_beneficiarios, String(50))
                     + literal_column("'/'")
-                    + cast(cupo_plan, String(50)),
-                    literal_column("' | '"),
-                )
-                .within_group(Servicio.nombre)
-                .label("BENEFICIARIOS"),
+                    + cast(cupo_plan, String(50))
+                ).label("BENEFICIARIOS"),
                 PlanLiga.correo.label("EMAIL"),
                 PlanLiga.telefono.label("TELEFONO"),
                 func.to_char(PlanLiga.fecha_ingreso, "DD/MM/YYYY").label("INSCRIPCION"),
                 PlanLiga.estado.label("ESTADO"),
             )
             .select_from(PlanLiga)
-            .outerjoin(TitularServicio, TitularServicio.planliga_id == PlanLiga.id)
-            .outerjoin(Servicio, Servicio.id == TitularServicio.servicio_id)
+            .outerjoin(PlanLigaTipoPlan, PlanLigaTipoPlan.id == PlanLiga.tipo_plan_id)
             .where(*condiciones)
-            .group_by(
-                PlanLiga.id,
-                PlanLiga.nombre1,
-                PlanLiga.nombre2,
-                PlanLiga.apellido1,
-                PlanLiga.apellido2,
-                PlanLiga.documento,
-                PlanLiga.tipo,
-                PlanLiga.empresa,
-                PlanLiga.correo,
-                PlanLiga.telefono,
-                PlanLiga.fecha_ingreso,
-                PlanLiga.estado,
-            )
             .order_by(PlanLiga.fecha_ingreso.desc())
             .offset(offset)
             .limit(limit)
@@ -469,18 +455,10 @@ class TitularesBeneficiariosRepository:
 
     def cupo_beneficiarios_titular(self, id_titular: int) -> int:
         stmt = (
-            select(
-                func.coalesce(
-                    func.sum(
-                        func.coalesce(Servicio.max_beneficiarios, 0)
-                        + func.coalesce(Servicio.beneficiarios_adicionales, 0)
-                    ),
-                    0,
-                )
-            )
-            .select_from(TitularServicio)
-            .join(Servicio, Servicio.id == TitularServicio.servicio_id)
-            .where(TitularServicio.planliga_id == id_titular)
+            select(_cupo_plan())
+            .select_from(PlanLiga)
+            .join(PlanLigaTipoPlan, PlanLigaTipoPlan.id == PlanLiga.tipo_plan_id)
+            .where(PlanLiga.id == id_titular)
         )
         return self.db.scalar(stmt) or 0
 
@@ -510,14 +488,6 @@ class TitularesBeneficiariosRepository:
         self.db.commit()
         self.db.refresh(beneficiario)
         return beneficiario.id
-
-    def asociar_servicio(self, id_titular: int, servicio_id: int) -> None:
-        self.db.add(
-            TitularServicio(
-                planliga_id=id_titular, servicio_id=servicio_id, estado="activo"
-            )
-        )
-        self.db.commit()
 
     def activar_beneficiario(
         self, id_titular: int, id_beneficiario: int, fecha_ingreso: date

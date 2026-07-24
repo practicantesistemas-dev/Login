@@ -15,7 +15,7 @@ class PlanItem(BaseModel):
     MAX_BENEFICIARIOS: Optional[int] = None
     BENEFICIARIOS_ADICIONALES: Optional[int] = None
     DESCRIPCION: Optional[str] = None
-    ESTADO: bool
+    ESTADO: Optional[str] = None
 
 
 class PlanNombre(BaseModel):
@@ -107,7 +107,7 @@ class TitularCrear(BaseModel):
     OTRAEPS: Optional[str] = None
     PLAN_SALUD: str
     PLAN_NOMBRE: str
-    SERVICIO_ID: int
+    TIPO_PLAN_ID: int
 
 
 class CreacionTitularResultado(BaseModel):
