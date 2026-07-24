@@ -42,7 +42,7 @@ def get_listado(
     limit: int = 6,
     offset: int = 0,
     estado: str | None = None,
-    tipo_plan_id: int | None = None,
+    tipo_plan_id: str | None = None,
     sexo: str | None = None,
     edad: str | None = None,
     busqueda: str | None = None,

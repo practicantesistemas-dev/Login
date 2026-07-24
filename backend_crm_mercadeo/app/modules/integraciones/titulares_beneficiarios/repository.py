@@ -140,8 +140,14 @@ def _nombre_plan() -> ColumnElement:
 
 
 def _cupo_plan() -> ColumnElement:
-    """Cupo total de beneficiarios del tipo_plan (ver BENEFICIARIOS_PLAN_ESTANDAR)."""
+    """Cupo total de beneficiarios del tipo_plan (ver BENEFICIARIOS_PLAN_ESTANDAR).
+
+    Requiere que PlanLiga este outer-joineado con PlanLigaTipoPlan: si el
+    titular no tiene tipo_plan_id (Plan Estandar implicito, sin fila propia
+    en el catalogo), el cupo es la base fija.
+    """
     return case(
+        (PlanLiga.tipo_plan_id.is_(None), BENEFICIARIOS_PLAN_ESTANDAR),
         (
             PlanLigaTipoPlan.beneficiarios_adicionales > 0,
             BENEFICIARIOS_PLAN_ESTANDAR + PlanLigaTipoPlan.beneficiarios_adicionales,
@@ -260,12 +266,13 @@ class TitularesBeneficiariosRepository:
     def _construir_condiciones(
         self,
         estado: str | None = None,
-        tipo_plan_id: int | None = None,
+        tipo_plan_id: str | None = None,
         sexo: str | None = None,
         edad: str | None = None,
         busqueda: str | None = None,
     ) -> list[ColumnElement]:
         estado = None if estado and estado.strip().lower() == "todos" else estado
+        tipo_plan_id = None if tipo_plan_id and tipo_plan_id.strip().lower() == "todos" else tipo_plan_id
         sexo = None if sexo and sexo.strip().lower() == "todos" else sexo
         edad = None if edad and edad.strip().lower() == "todos" else edad
 
@@ -276,8 +283,12 @@ class TitularesBeneficiariosRepository:
             if codigo:
                 condiciones.append(PlanLiga.estado == codigo)
 
-        if tipo_plan_id:
-            condiciones.append(PlanLiga.tipo_plan_id == tipo_plan_id)
+        if tipo_plan_id and tipo_plan_id.strip():
+            valor = tipo_plan_id.strip()
+            if valor.lower() == "null":
+                condiciones.append(PlanLiga.tipo_plan_id.is_(None))
+            else:
+                condiciones.append(PlanLiga.tipo_plan_id == int(valor))
 
         if sexo:
             condiciones.append(func.upper(PlanLiga.sexo) == sexo.upper())
@@ -313,7 +324,7 @@ class TitularesBeneficiariosRepository:
     def contar_titulares(
         self,
         estado: str | None = None,
-        tipo_plan_id: int | None = None,
+        tipo_plan_id: str | None = None,
         sexo: str | None = None,
         edad: str | None = None,
         busqueda: str | None = None,
@@ -328,7 +339,7 @@ class TitularesBeneficiariosRepository:
         limit: int = 6,
         offset: int = 0,
         estado: str | None = None,
-        tipo_plan_id: int | None = None,
+        tipo_plan_id: str | None = None,
         sexo: str | None = None,
         edad: str | None = None,
         busqueda: str | None = None,
@@ -457,7 +468,7 @@ class TitularesBeneficiariosRepository:
         stmt = (
             select(_cupo_plan())
             .select_from(PlanLiga)
-            .join(PlanLigaTipoPlan, PlanLigaTipoPlan.id == PlanLiga.tipo_plan_id)
+            .outerjoin(PlanLigaTipoPlan, PlanLigaTipoPlan.id == PlanLiga.tipo_plan_id)
             .where(PlanLiga.id == id_titular)
         )
         return self.db.scalar(stmt) or 0

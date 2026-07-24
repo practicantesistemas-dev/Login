@@ -107,7 +107,7 @@ class TitularCrear(BaseModel):
     OTRAEPS: Optional[str] = None
     PLAN_SALUD: str
     PLAN_NOMBRE: str
-    TIPO_PLAN_ID: int
+    TIPO_PLAN_ID: Optional[int] = None
 
 
 class CreacionTitularResultado(BaseModel):

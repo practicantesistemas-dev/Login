@@ -67,6 +67,10 @@ class TitularesBeneficiariosService:
             raise DocumentoDuplicadoError(data.DOCUMENTO, duplicado)
 
         datos = data.model_dump(exclude={"FECHA_INGRESO"})
+        if not datos.get("TIPO_PLAN_ID"):
+            # Sin plan contratado -> tipo_plan_id NULL, tratado como Plan Estandar
+            # (ver BENEFICIARIOS_PLAN_ESTANDAR en repository.py).
+            datos["TIPO_PLAN_ID"] = None
         self.legacy_repository.crear_preplanliga(datos)
 
         id_titular = self.repository.crear_titular(datos, data.FECHA_INGRESO)
@@ -225,7 +229,7 @@ class TitularesBeneficiariosService:
         limit: int = 6,
         offset: int = 0,
         estado: str | None = None,
-        tipo_plan_id: int | None = None,
+        tipo_plan_id: str | None = None,
         sexo: str | None = None,
         edad: str | None = None,
         busqueda: str | None = None,
