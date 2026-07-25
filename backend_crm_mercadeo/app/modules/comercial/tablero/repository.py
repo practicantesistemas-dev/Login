@@ -60,11 +60,10 @@ class TableroRepository:
         )
         return self.db.scalar(stmt) or 0
 
-    def contar_servicios_plan_liga_activos(self, desde: datetime | None, hasta: datetime | None) -> int:
-        stmt = select(func.count(func.distinct(PlanLiga.tipo_plan_id))).where(
-            PlanLiga.estado == ESTADO_PLANLIGA_ACTIVO,
-            PlanLiga.tipo_plan_id.isnot(None),
-            *_rango(PlanLiga.fecha_registro, desde, hasta),
+    def contar_servicios_plan_liga_activos(self) -> int:
+        stmt = select(func.count(func.distinct(PlanLigaTipoPlan.categoria))).where(
+            PlanLigaTipoPlan.estado == ESTADO_PLANLIGA_ACTIVO,
+            PlanLigaTipoPlan.categoria.isnot(None),
         )
         return self.db.scalar(stmt) or 0
 
@@ -151,6 +150,13 @@ class TableroRepository:
             )
             .select_from(PlanLiga)
             .outerjoin(PlanLigaTipoPlan, PlanLigaTipoPlan.id == PlanLiga.tipo_plan_id)
+            .where(
+                PlanLiga.estado == ESTADO_PLANLIGA_ACTIVO,
+                or_(
+                    PlanLiga.tipo_plan_id.is_(None),
+                    PlanLigaTipoPlan.estado == ESTADO_PLANLIGA_ACTIVO,
+                ),
+            )
             .group_by(PlanLiga.tipo_plan_id, PlanLigaTipoPlan.nombre)
             .order_by(func.count(PlanLiga.id).desc())
             .limit(limit)

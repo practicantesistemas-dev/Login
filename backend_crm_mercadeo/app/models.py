@@ -142,7 +142,7 @@ class PlanLiga(Base):
     otraeps: Mapped[str | None] = mapped_column(String(100))
     plan_salud: Mapped[str | None] = mapped_column(String(100))
     plan_nombre: Mapped[str | None] = mapped_column(String(100))
-    # renovado: Mapped[str | None] = mapped_column(String(1))  # TODO: descomentar en produccion (columna aun no existe en BD de pruebas)
+    renovado: Mapped[str | None] = mapped_column(String(1))
 
     oportunidades: Mapped[list["Oportunidad"]] = relationship(back_populates="plan_liga_titular")
     bitacoras: Mapped[list["Bitacora"]] = relationship(back_populates="titular")
@@ -181,7 +181,7 @@ class PlanLigaBeneficiario(Base):
     actualizado: Mapped[datetime | None] = mapped_column(DateTime)
     factura: Mapped[str | None] = mapped_column(String(20))
     codigo_activacion: Mapped[str | None] = mapped_column(String(20))
-    # renovado: Mapped[str | None] = mapped_column(String(1))  # TODO: descomentar en produccion (columna aun no existe en BD de pruebas)
+    renovado: Mapped[str | None] = mapped_column(String(1))
 
 
 class Empresa(Base):

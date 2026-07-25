@@ -50,7 +50,7 @@ class TableroService:
             titulares_pl=KpiItem(valor=r.contar_titulares_pl_activos(desde, ahora)),
             empresas=KpiItem(valor=r.contar_empresas_vinculadas(desde, ahora)),
             oportunidades=KpiItem(valor=r.contar_oportunidades_en_curso(desde, ahora)),
-            servicios=KpiItem(valor=r.contar_servicios_plan_liga_activos(desde, ahora)),
+            servicios=KpiItem(valor=r.contar_servicios_plan_liga_activos()),
             seguimientos=KpiItem(valor=r.contar_seguimientos_pendientes(desde, ahora)),
         )
 

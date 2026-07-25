@@ -241,12 +241,17 @@ class TitularesBeneficiariosRepository:
         return dict(fila) if fila is not None else None
 
     def listar_planes(self) -> list[PlanLigaTipoPlan]:
-        stmt = select(PlanLigaTipoPlan).order_by(PlanLigaTipoPlan.nombre)
+        stmt = (
+            select(PlanLigaTipoPlan)
+            .where(PlanLigaTipoPlan.estado == ESTADO_ACTIVO)
+            .order_by(PlanLigaTipoPlan.nombre)
+        )
         return list(self.db.scalars(stmt))
 
     def listar_nombres_planes(self) -> list[dict]:
         stmt = (
             select(PlanLigaTipoPlan.id.label("ID"), _nombre_plan().label("NOMBRE"))
+            .where(PlanLigaTipoPlan.estado == ESTADO_ACTIVO)
             .order_by(PlanLigaTipoPlan.nombre, PlanLigaTipoPlan.categoria)
         )
         return [dict(row) for row in self.db.execute(stmt).mappings().all()]
@@ -525,7 +530,7 @@ class TitularesBeneficiariosRepository:
             return False
         titular.estado = ESTADO_ACTIVO
         titular.fecha_ingreso = fecha_ingreso
-        # titular.renovado = "S"  # TODO: descomentar en produccion (columna aun no existe en BD de pruebas)
+        titular.renovado = "S"
         self.db.commit()
         return True
 
@@ -536,7 +541,7 @@ class TitularesBeneficiariosRepository:
             .values(
                 estado=ESTADO_ACTIVO,
                 fecha_ingreso=fecha_ingreso,
-                # renovado="S",  # TODO: descomentar en produccion (columna aun no existe en BD de pruebas)
+                renovado="S",
             )
         )
         resultado = self.db.execute(stmt)
