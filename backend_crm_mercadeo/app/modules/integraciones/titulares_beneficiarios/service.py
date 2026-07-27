@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Iterator
 
 from sqlalchemy.orm import Session
 
@@ -241,6 +242,18 @@ class TitularesBeneficiariosService:
             titular=TitularDetalle(**fila),
             beneficiarios_desactivados=len(beneficiarios_desactivados),
             registros_incle_marcados=num_incle,
+        )
+
+    def exportar_titulares_beneficiarios(
+        self,
+        estado: str | None = None,
+        tipo_plan_id: str | None = None,
+        sexo: str | None = None,
+        edad: str | None = None,
+        busqueda: str | None = None,
+    ) -> Iterator[dict]:
+        return self.repository.exportar_titulares_beneficiarios(
+            estado, tipo_plan_id, sexo, edad, busqueda
         )
 
     def listar_titulares(

@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Iterator
 
 from sqlalchemy import (
     ColumnElement,
@@ -333,6 +334,79 @@ class TitularesBeneficiariosRepository:
             )
 
         return condiciones
+
+    def exportar_titulares_beneficiarios(
+        self,
+        estado: str | None = None,
+        tipo_plan_id: str | None = None,
+        sexo: str | None = None,
+        edad: str | None = None,
+        busqueda: str | None = None,
+    ) -> Iterator[dict]:
+        """Titulares que cumplen los filtros, cada uno seguido de sus
+        beneficiarios. Sin paginar: trae todo lo que matchee los filtros."""
+        condiciones = self._construir_condiciones(estado, tipo_plan_id, sexo, edad, busqueda)
+
+        stmt_titulares = (
+            select(
+                PlanLiga.id.label("ID_TITULAR"),
+                literal_column("'TITULAR'").label("TIPO_REGISTRO"),
+                PlanLiga.tipo.label("TIPO_DOCUMENTO"),
+                PlanLiga.documento.label("DOCUMENTO"),
+                PlanLiga.nombre1.label("NOMBRE1"),
+                PlanLiga.nombre2.label("NOMBRE2"),
+                PlanLiga.apellido1.label("APELLIDO1"),
+                PlanLiga.apellido2.label("APELLIDO2"),
+                PlanLiga.empresa.label("EMPRESA"),
+                _nombre_plan().label("PLAN"),
+                PlanLiga.telefono.label("TELEFONO"),
+                PlanLiga.correo.label("CORREO"),
+                func.to_char(PlanLiga.fecha_ingreso, "DD/MM/YYYY").label("FECHA_INGRESO"),
+                PlanLiga.estado.label("ESTADO"),
+            )
+            .select_from(PlanLiga)
+            .outerjoin(PlanLigaTipoPlan, PlanLigaTipoPlan.id == PlanLiga.tipo_plan_id)
+            .where(*condiciones)
+            .order_by(PlanLiga.id)
+        )
+
+        stmt_beneficiarios = (
+            select(
+                PlanLigaBeneficiario.planliga_id.label("ID_TITULAR"),
+                literal_column("'BENEFICIARIO'").label("TIPO_REGISTRO"),
+                PlanLigaBeneficiario.tipo.label("TIPO_DOCUMENTO"),
+                PlanLigaBeneficiario.documento.label("DOCUMENTO"),
+                PlanLigaBeneficiario.nombre1.label("NOMBRE1"),
+                PlanLigaBeneficiario.nombre2.label("NOMBRE2"),
+                PlanLigaBeneficiario.apellido1.label("APELLIDO1"),
+                PlanLigaBeneficiario.apellido2.label("APELLIDO2"),
+                PlanLigaBeneficiario.empresa.label("EMPRESA"),
+                PlanLigaBeneficiario.tipo_plan.label("PLAN"),
+                PlanLigaBeneficiario.telefono.label("TELEFONO"),
+                PlanLigaBeneficiario.correo.label("CORREO"),
+                func.to_char(PlanLigaBeneficiario.fecha_ingreso, "DD/MM/YYYY").label(
+                    "FECHA_INGRESO"
+                ),
+                PlanLigaBeneficiario.estado.label("ESTADO"),
+            )
+            .select_from(PlanLigaBeneficiario)
+            .join(PlanLiga, PlanLiga.id == PlanLigaBeneficiario.planliga_id)
+            .outerjoin(PlanLigaTipoPlan, PlanLigaTipoPlan.id == PlanLiga.tipo_plan_id)
+            .where(*condiciones)
+            .order_by(PlanLigaBeneficiario.planliga_id, PlanLigaBeneficiario.orden)
+        )
+
+        # Los beneficiarios son pocos frente a los titulares (miles, no
+        # millones, en este dominio): se agrupan en memoria por titular para
+        # poder intercalarlos sin repetir la consulta de titulares por cada
+        # uno (evita el N+1).
+        beneficiarios_por_titular: dict[int, list[dict]] = {}
+        for fila in self.db.execute(stmt_beneficiarios).mappings():
+            beneficiarios_por_titular.setdefault(fila["ID_TITULAR"], []).append(dict(fila))
+
+        for fila_titular in self.db.execute(stmt_titulares).mappings():
+            yield dict(fila_titular)
+            yield from beneficiarios_por_titular.get(fila_titular["ID_TITULAR"], [])
 
     def contar_titulares(
         self,

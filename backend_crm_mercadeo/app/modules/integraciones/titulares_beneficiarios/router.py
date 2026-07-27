@@ -1,4 +1,10 @@
+import io
+
 from fastapi import APIRouter, Depends, status
+from fastapi.responses import Response
+from openpyxl import Workbook
+from openpyxl.cell import WriteOnlyCell
+from openpyxl.styles import Font
 
 from app.modules.integraciones.titulares_beneficiarios.dependencies import (
     get_titulares_beneficiarios_service,
@@ -29,6 +35,23 @@ from app.modules.integraciones.titulares_beneficiarios.service import (
 
 router = APIRouter(prefix="/titulares-beneficiarios", tags=["Titulares y Beneficiarios"])
 
+COLUMNAS_EXPORTACION = [
+    ("TIPO_REGISTRO", "Tipo"),
+    ("ID_TITULAR", "ID Titular"),
+    ("TIPO_DOCUMENTO", "Tipo Documento"),
+    ("DOCUMENTO", "Documento"),
+    ("NOMBRE1", "Nombre 1"),
+    ("NOMBRE2", "Nombre 2"),
+    ("APELLIDO1", "Apellido 1"),
+    ("APELLIDO2", "Apellido 2"),
+    ("EMPRESA", "Empresa"),
+    ("PLAN", "Plan"),
+    ("TELEFONO", "Telefono"),
+    ("CORREO", "Correo"),
+    ("FECHA_INGRESO", "Fecha Ingreso"),
+    ("ESTADO", "Estado"),
+]
+
 
 @router.get("/resumen", response_model=ResumenTitularesBeneficiarios)
 def get_resumen(
@@ -49,6 +72,45 @@ def get_listado(
     service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
 ) -> ListadoTitularesPaginado:
     return service.listar_titulares(limit, offset, estado, tipo_plan_id, sexo, edad, busqueda)
+
+
+@router.get("/exportar")
+def exportar_titulares_beneficiarios(
+    estado: str | None = None,
+    tipo_plan_id: str | None = None,
+    sexo: str | None = None,
+    edad: str | None = None,
+    busqueda: str | None = None,
+    service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
+) -> Response:
+    filas = service.exportar_titulares_beneficiarios(
+        estado, tipo_plan_id, sexo, edad, busqueda
+    )
+
+    wb = Workbook(write_only=True)
+    ws = wb.create_sheet("Titulares y Beneficiarios")
+
+    encabezados = []
+    for _, titulo in COLUMNAS_EXPORTACION:
+        celda = WriteOnlyCell(ws, value=titulo)
+        celda.font = Font(bold=True)
+        encabezados.append(celda)
+    ws.append(encabezados)
+
+    claves = [clave for clave, _ in COLUMNAS_EXPORTACION]
+    for fila in filas:
+        ws.append([fila.get(clave) for clave in claves])
+
+    buffer = io.BytesIO()
+    wb.save(buffer)
+
+    return Response(
+        content=buffer.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": "attachment; filename=titulares_beneficiarios.xlsx"
+        },
+    )
 
 
 @router.get("/planes", response_model=list[PlanItem])
