@@ -103,10 +103,9 @@ def update_beneficiario(
 def activar_beneficiario(
     id_titular: int,
     id_beneficiario: int,
-    data: BeneficiarioActivar,
     service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
 ) -> ActivacionBeneficiarioResultado:
-    return service.activar_beneficiario(id_titular, id_beneficiario, data.FECHA_INGRESO)
+    return service.activar_beneficiario(id_titular, id_beneficiario)
 
 
 @router.post(
@@ -119,6 +118,29 @@ def desactivar_beneficiario(
     service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
 ) -> DesactivacionBeneficiarioResultado:
     return service.desactivar_beneficiario(id_titular, id_beneficiario)
+
+
+@router.post(
+    "/beneficiarios/{documento}/activar",
+    response_model=ActivacionBeneficiarioResultado,
+)
+def activar_beneficiario_sin_titular(
+    documento: str,
+    data: BeneficiarioActivar,
+    service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
+) -> ActivacionBeneficiarioResultado:
+    return service.activar_beneficiario_sin_titular(documento, data.FECHA_INGRESO)
+
+
+@router.post(
+    "/beneficiarios/{documento}/desactivar",
+    response_model=DesactivacionBeneficiarioResultado,
+)
+def desactivar_beneficiario_sin_titular(
+    documento: str,
+    service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
+) -> DesactivacionBeneficiarioResultado:
+    return service.desactivar_beneficiario_sin_titular(documento)
 
 
 @router.post(

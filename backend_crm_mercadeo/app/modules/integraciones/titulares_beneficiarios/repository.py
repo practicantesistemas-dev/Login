@@ -240,6 +240,14 @@ class TitularesBeneficiariosRepository:
         fila = self.db.execute(stmt).mappings().first()
         return dict(fila) if fila is not None else None
 
+    def buscar_beneficiario_por_documento(self, documento: str) -> dict | None:
+        stmt = select(
+            PlanLigaBeneficiario.id.label("ID"),
+            PlanLigaBeneficiario.planliga_id.label("PLANLIGA_ID"),
+        ).where(PlanLigaBeneficiario.documento == documento)
+        fila = self.db.execute(stmt).mappings().first()
+        return dict(fila) if fila is not None else None
+
     def listar_planes(self) -> list[PlanLigaTipoPlan]:
         stmt = (
             select(PlanLigaTipoPlan)

@@ -7,7 +7,7 @@ class TitularNotFoundError(NotFoundError):
 
 
 class BeneficiarioNotFoundError(NotFoundError):
-    def __init__(self, id_beneficiario: int) -> None:
+    def __init__(self, id_beneficiario: int | str) -> None:
         super().__init__(detail=f"Beneficiario {id_beneficiario} no encontrado")
 
 

@@ -399,7 +399,7 @@ class PlanLigaTipoPlan(Base):
     fecha_registro: Mapped[datetime | None] = mapped_column(DateTime)
     estado: Mapped[str | None] = mapped_column(String(2))
     categoria: Mapped[str | None] = mapped_column(String(50))
-    tipo: Mapped[str | None] = mapped_column(String(30))
+    tipo_cliente: Mapped[str | None] = mapped_column(String(30))
     beneficiarios_adicionales: Mapped[int | None] = mapped_column(Integer)
     descripcion: Mapped[str | None] = mapped_column(String(500))
 

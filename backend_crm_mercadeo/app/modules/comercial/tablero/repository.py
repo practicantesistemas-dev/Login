@@ -1,6 +1,8 @@
+import logging
 from datetime import datetime
 
 from sqlalchemy import ColumnElement, func, or_, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.models import (
@@ -19,6 +21,8 @@ ESTADOS_OPORTUNIDAD_CERRADOS = {"ganada", "ganado", "perdida", "perdido", "cerra
 ESTADO_ACTIVO = "activo"
 ESTADO_PLANLIGA_ACTIVO = "A"
 
+logger = logging.getLogger(__name__)
+
 
 def _rango(campo_fecha: ColumnElement, desde: datetime | None, hasta: datetime | None) -> list:
     condiciones = []
@@ -33,17 +37,29 @@ class TableroRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
+    def _contar_seguro(self, stmt) -> int:
+        """Ejecuta un SELECT count() devolviendo 0 si la tabla/consulta falla
+        (ej. ORA-00942 tabla no existe), en vez de tumbar todo el resumen."""
+        try:
+            return self.db.scalar(stmt) or 0
+        except SQLAlchemyError:
+            logger.warning("Fallo al contar para el tablero, se usa 0", exc_info=True)
+            self.db.rollback()
+            return 0
+
     def contar_contactos(self, desde: datetime | None, hasta: datetime | None) -> int:
         stmt = select(func.count()).select_from(Contacto).where(
             *_rango(Contacto.fecha_creacion, desde, hasta)
         )
-        return self.db.scalar(stmt) or 0
+        return self._contar_seguro(stmt)
 
     def contar_empresas_vinculadas(self, desde: datetime | None, hasta: datetime | None) -> int:
-        stmt = select(func.count()).select_from(Empresa).where(
-            Empresa.estado == True, *_rango(Empresa.fecha_creacion, desde, hasta)  # noqa: E712
+        empresa_normalizada = func.upper(func.trim(PlanLiga.empresa))
+        stmt = select(func.count(func.distinct(empresa_normalizada))).where(
+            PlanLiga.empresa.isnot(None),
+            *_rango(PlanLiga.fecha_registro, desde, hasta),
         )
-        return self.db.scalar(stmt) or 0
+        return self._contar_seguro(stmt)
 
     def contar_oportunidades_en_curso(self, desde: datetime | None, hasta: datetime | None) -> int:
         stmt = select(func.count()).select_from(Oportunidad).where(
@@ -51,28 +67,28 @@ class TableroRepository:
             func.lower(Oportunidad.estado).notin_(ESTADOS_OPORTUNIDAD_CERRADOS),
             *_rango(Oportunidad.fecha_creacion, desde, hasta),
         )
-        return self.db.scalar(stmt) or 0
+        return self._contar_seguro(stmt)
 
     def contar_titulares_pl_activos(self, desde: datetime | None, hasta: datetime | None) -> int:
         stmt = select(func.count()).select_from(PlanLiga).where(
             PlanLiga.estado == ESTADO_PLANLIGA_ACTIVO,
             *_rango(PlanLiga.fecha_registro, desde, hasta),
         )
-        return self.db.scalar(stmt) or 0
+        return self._contar_seguro(stmt)
 
     def contar_servicios_plan_liga_activos(self) -> int:
         stmt = select(func.count(func.distinct(PlanLigaTipoPlan.categoria))).where(
             PlanLigaTipoPlan.estado == ESTADO_PLANLIGA_ACTIVO,
             PlanLigaTipoPlan.categoria.isnot(None),
         )
-        return self.db.scalar(stmt) or 0
+        return self._contar_seguro(stmt)
 
     def contar_seguimientos_pendientes(self, desde: datetime | None, hasta: datetime | None) -> int:
         stmt = select(func.count()).select_from(Bitacora).where(
             Bitacora.estado == EstadoBitacora.PENDIENTE,
             *_rango(Bitacora.fecha, desde, hasta),
         )
-        return self.db.scalar(stmt) or 0
+        return self._contar_seguro(stmt)
 
     def actividad_reciente(
         self, limit: int

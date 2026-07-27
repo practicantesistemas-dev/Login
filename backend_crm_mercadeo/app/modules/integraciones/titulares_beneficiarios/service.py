@@ -156,13 +156,16 @@ class TitularesBeneficiariosService:
         return BeneficiarioDetalle(**fila)
 
     def activar_beneficiario(
-        self, id_titular: int, id_beneficiario: int, fecha_ingreso: date
+        self, id_titular: int, id_beneficiario: int, fecha_ingreso: date | None = None
     ) -> ActivacionBeneficiarioResultado:
         titular = self.repository.obtener_titular(id_titular)
         if titular is None:
             raise TitularNotFoundError(id_titular)
         if titular["ESTADO"] != ESTADO_ACTIVO:
             raise TitularInactivoError(id_titular)
+
+        if fecha_ingreso is None:
+            fecha_ingreso = self.repository.obtener_fecha_ingreso_titular(id_titular)
 
         if not self.repository.activar_beneficiario(id_titular, id_beneficiario, fecha_ingreso):
             raise BeneficiarioNotFoundError(id_beneficiario)
@@ -188,6 +191,22 @@ class TitularesBeneficiariosService:
             beneficiario=BeneficiarioDetalle(**fila),
             registros_incle_marcados=num_incle,
         )
+
+    def activar_beneficiario_sin_titular(
+        self, documento: str, fecha_ingreso: date
+    ) -> ActivacionBeneficiarioResultado:
+        fila = self.repository.buscar_beneficiario_por_documento(documento)
+        if fila is None:
+            raise BeneficiarioNotFoundError(documento)
+        return self.activar_beneficiario(fila["PLANLIGA_ID"], fila["ID"], fecha_ingreso)
+
+    def desactivar_beneficiario_sin_titular(
+        self, documento: str
+    ) -> DesactivacionBeneficiarioResultado:
+        fila = self.repository.buscar_beneficiario_por_documento(documento)
+        if fila is None:
+            raise BeneficiarioNotFoundError(documento)
+        return self.desactivar_beneficiario(fila["PLANLIGA_ID"], fila["ID"])
 
     def activar_titular(
         self, id_titular: int, fecha_ingreso: date
@@ -254,7 +273,7 @@ class TitularesBeneficiariosService:
                     if servicio.categoria
                     else servicio.nombre
                 ),
-                TIPO=servicio.tipo,
+                TIPO=servicio.tipo_cliente,
                 MAX_BENEFICIARIOS=servicio.beneficiarios,
                 BENEFICIARIOS_ADICIONALES=servicio.beneficiarios_adicionales,
                 DESCRIPCION=servicio.descripcion,
