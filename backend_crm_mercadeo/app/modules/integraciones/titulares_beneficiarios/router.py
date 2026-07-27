@@ -23,6 +23,9 @@ from app.modules.integraciones.titulares_beneficiarios.schemas import (
     ListadoTitularesPaginado,
     PlanItem,
     PlanNombre,
+    ReemplazoBeneficiarioResultado,
+    ReemplazoPersona,
+    ReemplazoTitularResultado,
     ResumenTitularesBeneficiarios,
     TitularActivar,
     TitularCrear,
@@ -159,6 +162,20 @@ def update_beneficiario(
 
 
 @router.post(
+    "/{id_titular}/beneficiarios/{id_beneficiario}/reemplazar",
+    response_model=ReemplazoBeneficiarioResultado,
+    status_code=status.HTTP_201_CREATED,
+)
+def reemplazar_beneficiario(
+    id_titular: int,
+    id_beneficiario: int,
+    data: ReemplazoPersona,
+    service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
+) -> ReemplazoBeneficiarioResultado:
+    return service.reemplazar_beneficiario(id_titular, id_beneficiario, data)
+
+
+@router.post(
     "/{id_titular}/beneficiarios/{id_beneficiario}/activar",
     response_model=ActivacionBeneficiarioResultado,
 )
@@ -232,6 +249,19 @@ def update_titular(
     service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
 ) -> TitularDetalle:
     return service.actualizar_titular(id_titular, data)
+
+
+@router.post(
+    "/{id_titular}/reemplazar",
+    response_model=ReemplazoTitularResultado,
+    status_code=status.HTTP_201_CREATED,
+)
+def reemplazar_titular(
+    id_titular: int,
+    data: ReemplazoPersona,
+    service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
+) -> ReemplazoTitularResultado:
+    return service.reemplazar_titular(id_titular, data)
 
 
 @router.post("/{id_titular}/activar", response_model=ActivacionTitularResultado)

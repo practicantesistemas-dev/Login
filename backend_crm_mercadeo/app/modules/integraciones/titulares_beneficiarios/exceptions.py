@@ -21,6 +21,16 @@ class TitularInactivoError(ConflictError):
         )
 
 
+class BeneficiarioInactivoError(ConflictError):
+    def __init__(self, id_beneficiario: int, accion: str = "reemplazar el beneficiario") -> None:
+        super().__init__(
+            detail=(
+                f"No se pudo {accion} ya que el beneficiario "
+                f"{id_beneficiario} esta inactivo"
+            )
+        )
+
+
 class DocumentoDuplicadoError(ConflictError):
     def __init__(self, documento: str, tipo_registro: str) -> None:
         super().__init__(

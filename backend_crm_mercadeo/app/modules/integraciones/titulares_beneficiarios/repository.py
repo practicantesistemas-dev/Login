@@ -525,6 +525,96 @@ class TitularesBeneficiariosRepository:
         self.db.commit()
         return True
 
+    def reemplazar_titular(
+        self, id_titular_anterior: int, datos: dict
+    ) -> tuple[int, int] | None:
+        """Da de alta un titular nuevo (nueva persona) heredando plan y cupo
+        del anterior, reasigna los beneficiarios del anterior al nuevo y
+        desactiva el anterior. Retorna (id_nuevo, beneficiarios_reasignados)
+        o None si el anterior no existe o ya esta inactivo."""
+        anterior = self.db.get(PlanLiga, id_titular_anterior)
+        if anterior is None or anterior.estado != ESTADO_ACTIVO:
+            return None
+
+        campos_nuevos = {
+            atributo: datos.get(campo)
+            for campo, atributo in CAMPOS_TITULAR_EDITABLES.items()
+            if campo != "ESTADO"
+        }
+        nuevo = PlanLiga(
+            **campos_nuevos,
+            tipo_plan=anterior.tipo_plan,
+            tipo_plan_id=anterior.tipo_plan_id,
+            tipo_afiliado=anterior.tipo_afiliado,
+            eps=anterior.eps,
+            otraeps=anterior.otraeps,
+            plan_salud=anterior.plan_salud,
+            plan_nombre=anterior.plan_nombre,
+            estado=ESTADO_ACTIVO,
+            fecha_ingreso=anterior.fecha_ingreso,
+            fecha_registro=datetime.now(),
+        )
+        self.db.add(nuevo)
+        self.db.flush()
+
+        stmt = (
+            update(PlanLigaBeneficiario)
+            .where(
+                PlanLigaBeneficiario.planliga_id == id_titular_anterior,
+                PlanLigaBeneficiario.estado == ESTADO_ACTIVO,
+            )
+            .values(planliga_id=nuevo.id)
+        )
+        resultado = self.db.execute(stmt)
+
+        anterior.estado = ESTADO_INACTIVO
+
+        self.db.commit()
+        self.db.refresh(nuevo)
+        return nuevo.id, resultado.rowcount
+
+    def reemplazar_beneficiario(
+        self, id_titular: int, id_beneficiario_anterior: int, datos: dict
+    ) -> int | None:
+        """Da de alta un beneficiario nuevo (nueva persona) en el mismo
+        titular y orden, heredando plan del anterior, y desactiva el
+        anterior. Retorna el id nuevo o None si el anterior no existe, no
+        pertenece a ese titular o ya esta inactivo."""
+        anterior = self.db.get(PlanLigaBeneficiario, id_beneficiario_anterior)
+        if (
+            anterior is None
+            or anterior.planliga_id != id_titular
+            or anterior.estado != ESTADO_ACTIVO
+        ):
+            return None
+
+        campos_nuevos = {
+            atributo: datos.get(campo)
+            for campo, atributo in CAMPOS_BENEFICIARIO_EDITABLES.items()
+            if campo != "ESTADO"
+        }
+        nuevo = PlanLigaBeneficiario(
+            **campos_nuevos,
+            planliga_id=id_titular,
+            tipo_plan=anterior.tipo_plan,
+            eps=anterior.eps,
+            otraeps=anterior.otraeps,
+            plan_salud=anterior.plan_salud,
+            plan_nombre=anterior.plan_nombre,
+            orden=anterior.orden,
+            estado=ESTADO_ACTIVO,
+            tipo_afiliado=anterior.tipo_afiliado,
+            fecha_ingreso=anterior.fecha_ingreso,
+            fecha_registro=datetime.now(),
+        )
+        self.db.add(nuevo)
+
+        anterior.estado = ESTADO_INACTIVO
+
+        self.db.commit()
+        self.db.refresh(nuevo)
+        return nuevo.id
+
     def existe_documento(self, tipo: str, documento: str) -> str | None:
         """Retorna 'TITULAR', 'BENEFICIARIO' o None si el documento no esta registrado."""
         if (

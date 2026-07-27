@@ -4,6 +4,7 @@ from typing import Iterator
 from sqlalchemy.orm import Session
 
 from app.modules.integraciones.titulares_beneficiarios.exceptions import (
+    BeneficiarioInactivoError,
     BeneficiarioNotFoundError,
     CupoBeneficiariosExcedidoError,
     DocumentoDuplicadoError,
@@ -31,6 +32,9 @@ from app.modules.integraciones.titulares_beneficiarios.schemas import (
     ListadoTitularesPaginado,
     PlanItem,
     PlanNombre,
+    ReemplazoBeneficiarioResultado,
+    ReemplazoPersona,
+    ReemplazoTitularResultado,
     ResumenTitularesBeneficiarios,
     TitularCrear,
     TitularDetalle,
@@ -155,6 +159,104 @@ class TitularesBeneficiariosService:
             raise BeneficiarioNotFoundError(id_beneficiario)
         fila = self.repository.obtener_beneficiario(id_titular, id_beneficiario)
         return BeneficiarioDetalle(**fila)
+
+    def reemplazar_titular(
+        self, id_titular: int, data: ReemplazoPersona
+    ) -> ReemplazoTitularResultado:
+        anterior = self.repository.obtener_titular(id_titular)
+        if anterior is None:
+            raise TitularNotFoundError(id_titular)
+        if anterior["ESTADO"] != ESTADO_ACTIVO:
+            raise TitularInactivoError(id_titular, accion="reemplazar el titular")
+
+        duplicado = self.repository.existe_documento(data.TIPO_DOCUMENTO, data.DOCUMENTO)
+        if duplicado is not None:
+            raise DocumentoDuplicadoError(data.DOCUMENTO, duplicado)
+
+        resultado = self.repository.reemplazar_titular(id_titular, data.model_dump())
+        if resultado is None:
+            raise TitularInactivoError(id_titular, accion="reemplazar el titular")
+        id_nuevo, num_beneficiarios = resultado
+
+        # El titular anterior queda fuera de Plan Liga en Servinte.
+        num_incle_marcados = self.legacy_repository.marcar_registros_incle(
+            anterior["TIPO_DOCUMENTO"], anterior["DOCUMENTO"]
+        )
+        self.legacy_repository.desactivar_preplanliga(
+            anterior["TIPO_DOCUMENTO"], anterior["DOCUMENTO"]
+        )
+
+        # El titular nuevo se da de alta en Servinte como si fuera un ingreso nuevo.
+        usuario_creado = self.legacy_repository.crear_usuario_servinte(
+            data.TIPO_DOCUMENTO, data.DOCUMENTO, data.NOMBRE1, data.NOMBRE2,
+            data.APELLIDO1, data.APELLIDO2,
+        )
+        nombre_completo = " ".join(
+            parte for parte in [data.NOMBRE1, data.NOMBRE2, data.APELLIDO1, data.APELLIDO2]
+            if parte
+        )
+        marcado_incle = self.legacy_repository.marcar_nuevo_titular_incle(
+            data.TIPO_DOCUMENTO, data.DOCUMENTO, nombre_completo
+        )
+
+        fila = self.repository.obtener_titular(id_nuevo)
+        return ReemplazoTitularResultado(
+            titular_anterior_id=id_titular,
+            titular_nuevo=TitularDetalle(**fila),
+            beneficiarios_reasignados=num_beneficiarios,
+            usuario_servinte_creado=usuario_creado,
+            marcado_en_incle=marcado_incle,
+            registros_incle_marcados_anterior=num_incle_marcados,
+        )
+
+    def reemplazar_beneficiario(
+        self, id_titular: int, id_beneficiario: int, data: ReemplazoPersona
+    ) -> ReemplazoBeneficiarioResultado:
+        if self.repository.obtener_titular(id_titular) is None:
+            raise TitularNotFoundError(id_titular)
+
+        anterior = self.repository.obtener_beneficiario(id_titular, id_beneficiario)
+        if anterior is None:
+            raise BeneficiarioNotFoundError(id_beneficiario)
+        if anterior["ESTADO"] != ESTADO_ACTIVO:
+            raise BeneficiarioInactivoError(id_beneficiario)
+
+        duplicado = self.repository.existe_documento(data.TIPO_DOCUMENTO, data.DOCUMENTO)
+        if duplicado is not None:
+            raise DocumentoDuplicadoError(data.DOCUMENTO, duplicado)
+
+        id_nuevo = self.repository.reemplazar_beneficiario(
+            id_titular, id_beneficiario, data.model_dump()
+        )
+        if id_nuevo is None:
+            raise BeneficiarioInactivoError(id_beneficiario)
+
+        # El beneficiario anterior queda fuera de Plan Liga en Servinte.
+        num_incle_marcados = self.legacy_repository.marcar_registros_incle(
+            anterior["TIPO_DOCUMENTO"], anterior["DOCUMENTO"]
+        )
+
+        # El beneficiario nuevo se da de alta en Servinte como si fuera un ingreso nuevo.
+        usuario_creado = self.legacy_repository.crear_usuario_servinte(
+            data.TIPO_DOCUMENTO, data.DOCUMENTO, data.NOMBRE1, data.NOMBRE2,
+            data.APELLIDO1, data.APELLIDO2,
+        )
+        nombre_completo = " ".join(
+            parte for parte in [data.NOMBRE1, data.NOMBRE2, data.APELLIDO1, data.APELLIDO2]
+            if parte
+        )
+        marcado_incle = self.legacy_repository.marcar_nuevo_beneficiario_incle(
+            data.TIPO_DOCUMENTO, data.DOCUMENTO, nombre_completo
+        )
+
+        fila = self.repository.obtener_beneficiario(id_titular, id_nuevo)
+        return ReemplazoBeneficiarioResultado(
+            beneficiario_anterior_id=id_beneficiario,
+            beneficiario_nuevo=BeneficiarioDetalle(**fila),
+            usuario_servinte_creado=usuario_creado,
+            marcado_en_incle=marcado_incle,
+            registros_incle_marcados_anterior=num_incle_marcados,
+        )
 
     def activar_beneficiario(
         self, id_titular: int, id_beneficiario: int, fecha_ingreso: date | None = None

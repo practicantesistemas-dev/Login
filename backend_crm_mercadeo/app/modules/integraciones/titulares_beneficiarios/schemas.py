@@ -85,6 +85,36 @@ class TitularActivar(BaseModel):
     FECHA_INGRESO: date
 
 
+class ReemplazoPersona(BaseModel):
+    """Datos de la persona nueva que reemplaza al titular/beneficiario actual.
+    El plan, cupo y demas datos legacy (tipo_plan, eps, plan_salud, etc.) se
+    heredan del registro reemplazado, no se piden aqui."""
+
+    TIPO_DOCUMENTO: str
+    DOCUMENTO: str
+    NOMBRE1: str
+    NOMBRE2: Optional[str] = None
+    APELLIDO1: str
+    APELLIDO2: Optional[str] = None
+    FECHA_NACIMIENTO: Optional[date] = None
+    SEXO: Optional[str] = None
+    DIRECCION: Optional[str] = None
+    CIUDAD: Optional[str] = None
+    DEPARTAMENTO: Optional[str] = None
+    CORREO: Optional[str] = None
+    TELEFONO: Optional[str] = None
+    EMPRESA: Optional[str] = None
+
+
+class ReemplazoTitularResultado(BaseModel):
+    titular_anterior_id: int
+    titular_nuevo: TitularDetalle
+    beneficiarios_reasignados: int
+    usuario_servinte_creado: bool
+    marcado_en_incle: bool
+    registros_incle_marcados_anterior: int
+
+
 class TitularCrear(BaseModel):
     TIPO_PLAN: Optional[str] = None
     TIPO_DOCUMENTO: str
@@ -212,3 +242,11 @@ class BeneficiarioUpdate(BaseModel):
     TELEFONO: Optional[str] = None
     EMPRESA: Optional[str] = None
     ESTADO: Optional[str] = None
+
+
+class ReemplazoBeneficiarioResultado(BaseModel):
+    beneficiario_anterior_id: int
+    beneficiario_nuevo: BeneficiarioDetalle
+    usuario_servinte_creado: bool
+    marcado_en_incle: bool
+    registros_incle_marcados_anterior: int
