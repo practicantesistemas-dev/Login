@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     app_name: str = "Backend CRM Mercadeo"
     api_prefix: str = "/api"
 
+    secret_key: str = "cambia-esta-clave-en-produccion-liga-2026"
+    algorithm: str = "HS256"
+
     cors_origins: list[str] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",

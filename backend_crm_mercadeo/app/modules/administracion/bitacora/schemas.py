@@ -10,7 +10,6 @@ class BitacoraCreate(BaseModel):
     descripcion: str
     proximo_paso: str | None = None
     fecha: datetime | None = None
-    usuario_id: int | None = None
     contacto_id: int | None = None
     empresa_id: int | None = None
     oportunidad_id: int | None = None
@@ -40,3 +39,27 @@ class BitacoraRead(BaseModel):
     oportunidad_id: int | None = None
     titular_id: int | None = None
     estado: EstadoBitacora
+
+
+class BitacoraItem(BaseModel):
+    id: int
+    tipo: str | None = None
+    descripcion: str | None = None
+    proximo_paso: str | None = None
+    fecha: datetime | None = None
+    estado: EstadoBitacora
+    usuario_id: int | None = None
+    usuario_nombre: str | None = None
+    contacto_id: int | None = None
+    contacto_nombre: str | None = None
+    empresa_id: int | None = None
+    empresa_nombre: str | None = None
+    oportunidad_id: int | None = None
+    titular_id: int | None = None
+    plan_nombre: str | None = None
+
+
+class BitacoraListado(BaseModel):
+    items: list[BitacoraItem]
+    total: int
+    conteo_por_tipo: dict[str, int]

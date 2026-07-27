@@ -344,6 +344,7 @@ class Usuario(Base):
     __tablename__ = "intranet_usuarios"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    usuario: Mapped[str | None] = mapped_column(String(50))
     nombres: Mapped[str | None] = mapped_column(String(50))
 
     importaciones: Mapped[list["Importacion"]] = relationship(back_populates="usuario")

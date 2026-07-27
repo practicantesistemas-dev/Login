@@ -6,3 +6,4 @@ oracledb
 python-dotenv
 pydantic-settings
 openpyxl
+python-jose[cryptography]
