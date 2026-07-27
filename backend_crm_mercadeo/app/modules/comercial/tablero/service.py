@@ -81,7 +81,7 @@ class TableroService:
         total = r.contar_total_contactos(desde, ahora)
 
         def item(cantidad: int) -> IndicadorItem:
-            porcentaje = round(cantidad / total * 100, 1) if total else 0.0
+            porcentaje = min(round(cantidad / total * 100, 1), 100.0) if total else 0.0
             return IndicadorItem(cantidad=cantidad, porcentaje=porcentaje)
 
         return DistribucionContactos(
@@ -111,13 +111,13 @@ class TableroService:
 
     def top_planes(self, limit: int = 4) -> list[TopPlanItem]:
         filas = self.repository.top_planes(limit)
-        total = sum(fila.total for fila in filas)
+        total = self.repository.contar_planes_activos()
         return [
             TopPlanItem(
                 plan_id=fila.plan_id,
                 nombre=fila.nombre,
                 solicitudes=fila.total,
-                porcentaje=round(fila.total / total * 100, 1) if total else 0.0,
+                porcentaje=min(round(fila.total / total * 100, 1), 100.0) if total else 0.0,
             )
             for fila in filas
         ]

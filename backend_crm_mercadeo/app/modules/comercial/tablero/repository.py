@@ -166,15 +166,27 @@ class TableroRepository:
             )
             .select_from(PlanLiga)
             .outerjoin(PlanLigaTipoPlan, PlanLigaTipoPlan.id == PlanLiga.tipo_plan_id)
-            .where(
-                PlanLiga.estado == ESTADO_PLANLIGA_ACTIVO,
-                or_(
-                    PlanLiga.tipo_plan_id.is_(None),
-                    PlanLigaTipoPlan.estado == ESTADO_PLANLIGA_ACTIVO,
-                ),
-            )
+            .where(*self._filtro_planes_activos())
             .group_by(PlanLiga.tipo_plan_id, PlanLigaTipoPlan.nombre)
             .order_by(func.count(PlanLiga.id).desc())
             .limit(limit)
         )
         return list(self.db.execute(stmt).all())
+
+    def _filtro_planes_activos(self) -> list:
+        return [
+            PlanLiga.estado == ESTADO_PLANLIGA_ACTIVO,
+            or_(
+                PlanLiga.tipo_plan_id.is_(None),
+                PlanLigaTipoPlan.estado == ESTADO_PLANLIGA_ACTIVO,
+            ),
+        ]
+
+    def contar_planes_activos(self) -> int:
+        stmt = (
+            select(func.count(PlanLiga.id))
+            .select_from(PlanLiga)
+            .outerjoin(PlanLigaTipoPlan, PlanLigaTipoPlan.id == PlanLiga.tipo_plan_id)
+            .where(*self._filtro_planes_activos())
+        )
+        return self.db.scalar(stmt) or 0

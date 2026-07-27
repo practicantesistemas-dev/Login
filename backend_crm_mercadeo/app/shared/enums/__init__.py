@@ -6,6 +6,14 @@ class EstadoBitacora(str, Enum):
     REALIZADO = "realizado"
 
 
+class TipoActividadBitacora(str, Enum):
+    LLAMADA = "llamada"
+    CORREO = "correo"
+    REUNION = "reunion"
+    WHATSAPP = "whatsapp"
+    NOTA = "nota"
+
+
 class TipoContacto(str, Enum):
     CLIENTE = "Cliente"
     PROSPECTO = "Prospecto"
