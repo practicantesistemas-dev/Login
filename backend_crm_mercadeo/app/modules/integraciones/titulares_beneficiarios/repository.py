@@ -324,12 +324,35 @@ class TitularesBeneficiariosRepository:
                 + literal_column("' '")
                 + func.coalesce(PlanLiga.apellido2, "")
             )
+            nombre_completo_beneficiario = (
+                func.coalesce(PlanLigaBeneficiario.nombre1, "")
+                + literal_column("' '")
+                + func.coalesce(PlanLigaBeneficiario.nombre2, "")
+                + literal_column("' '")
+                + func.coalesce(PlanLigaBeneficiario.apellido1, "")
+                + literal_column("' '")
+                + func.coalesce(PlanLigaBeneficiario.apellido2, "")
+            )
             condiciones.append(
                 or_(
                     func.upper(nombre_completo).like(termino),
                     func.upper(func.coalesce(PlanLiga.documento, "")).like(termino),
                     func.upper(func.coalesce(PlanLiga.empresa, "")).like(termino),
                     func.upper(func.coalesce(PlanLiga.correo, "")).like(termino),
+                    select(PlanLigaBeneficiario.id)
+                    .where(
+                        PlanLigaBeneficiario.planliga_id == PlanLiga.id,
+                        or_(
+                            func.upper(nombre_completo_beneficiario).like(termino),
+                            func.upper(func.coalesce(PlanLigaBeneficiario.documento, "")).like(
+                                termino
+                            ),
+                            func.upper(func.coalesce(PlanLigaBeneficiario.correo, "")).like(
+                                termino
+                            ),
+                        ),
+                    )
+                    .exists(),
                 )
             )
 
