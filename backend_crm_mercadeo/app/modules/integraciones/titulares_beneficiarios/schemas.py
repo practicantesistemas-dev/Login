@@ -138,6 +138,7 @@ class TitularCrear(BaseModel):
     PLAN_SALUD: str
     PLAN_NOMBRE: str
     TIPO_PLAN_ID: Optional[int] = None
+    FACTURA: Optional[str] = None
 
 
 class CreacionTitularResultado(BaseModel):

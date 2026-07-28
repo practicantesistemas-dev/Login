@@ -6,6 +6,7 @@ from openpyxl import Workbook
 from openpyxl.cell import WriteOnlyCell
 from openpyxl.styles import Font
 
+from app.core.dependencies import get_current_username
 from app.modules.integraciones.titulares_beneficiarios.dependencies import (
     get_titulares_beneficiarios_service,
 )
@@ -229,9 +230,10 @@ def desactivar_beneficiario_sin_titular(
 )
 def crear_titular(
     data: TitularCrear,
+    username: str = Depends(get_current_username),
     service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
 ) -> CreacionTitularResultado:
-    return service.crear_titular(data)
+    return service.crear_titular(data, username)
 
 
 @router.get("/{id_titular}", response_model=TitularDetalle)

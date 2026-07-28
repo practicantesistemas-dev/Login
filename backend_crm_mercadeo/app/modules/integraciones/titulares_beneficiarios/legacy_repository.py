@@ -51,20 +51,22 @@ class LegacyRepository:
         self.db.commit()
         return resultado.rowcount
 
-    def crear_preplanliga(self, datos: dict) -> None:
+    def crear_preplanliga(self, datos: dict, usuario_id: int | None) -> None:
         """Registra el alta en INTRANET_PREPLANLIGA (ESTADO 'R' = registrado).
-        `datos` trae las llaves en mayuscula tal como llegan del schema TitularCrear."""
+        `datos` trae las llaves en mayuscula tal como llegan del schema TitularCrear.
+        `usuario_id` es el id (tabla Usuario) de quien crea el titular desde el CRM."""
         stmt = text(
             """
             INSERT INTO INTRANET_PREPLANLIGA
             (TIPO_PLAN, TIPO, DOCUMENTO, NOMBRE1, NOMBRE2, APELLIDO1, APELLIDO2, FECHA_NACIMIENTO,
-            SEXO, DIRECCION, CIUDAD, DEPARTAMENTO, CORREO, TELEFONO, EMPRESA, FECHA_REGISTRO, ESTADO)
+            SEXO, DIRECCION, CIUDAD, DEPARTAMENTO, CORREO, TELEFONO, EMPRESA, FECHA_REGISTRO, ESTADO,
+            USUARIO_ID, FACTURA)
             VALUES (:TIPO_PLAN, :TIPO_DOCUMENTO, :DOCUMENTO, :NOMBRE1, :NOMBRE2, :APELLIDO1, :APELLIDO2,
             :FECHA_NACIMIENTO, :SEXO, :DIRECCION, :CIUDAD, :DEPARTAMENTO, :CORREO, :TELEFONO, :EMPRESA,
-            SYSDATE, 'R')
+            SYSDATE, 'R', :USUARIO_ID, :FACTURA)
             """
         )
-        self.db.execute(stmt, datos)
+        self.db.execute(stmt, {**datos, "USUARIO_ID": usuario_id})
         self.db.commit()
 
     def existe_usuario_servinte(self, tipo: str, documento: str) -> bool:

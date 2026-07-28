@@ -66,7 +66,7 @@ class TitularesBeneficiariosService:
         filas = self.repository.listar_beneficiarios(id_titular)
         return [BeneficiarioDetalle(**fila) for fila in filas]
 
-    def crear_titular(self, data: TitularCrear) -> CreacionTitularResultado:
+    def crear_titular(self, data: TitularCrear, username: str) -> CreacionTitularResultado:
         duplicado = self.repository.existe_documento(data.TIPO_DOCUMENTO, data.DOCUMENTO)
         if duplicado is not None:
             raise DocumentoDuplicadoError(data.DOCUMENTO, duplicado)
@@ -76,7 +76,8 @@ class TitularesBeneficiariosService:
             # Sin plan contratado -> tipo_plan_id NULL, tratado como Plan Estandar
             # (ver BENEFICIARIOS_PLAN_ESTANDAR en repository.py).
             datos["TIPO_PLAN_ID"] = None
-        self.legacy_repository.crear_preplanliga(datos)
+        usuario_id = self.repository.obtener_usuario_id(username)
+        self.legacy_repository.crear_preplanliga(datos, usuario_id)
 
         id_titular = self.repository.crear_titular(datos, data.FECHA_INGRESO)
 

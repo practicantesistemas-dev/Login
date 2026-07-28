@@ -14,7 +14,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Session
 
-from app.models import PlanLiga, PlanLigaBeneficiario, PlanLigaTipoPlan
+from app.models import PlanLiga, PlanLigaBeneficiario, PlanLigaTipoPlan, Usuario
 
 ESTADO_ACTIVO = "A"
 ESTADO_INACTIVO = "I"
@@ -642,6 +642,12 @@ class TitularesBeneficiariosRepository:
 
         return None
 
+    def obtener_usuario_id(self, username: str) -> int | None:
+        stmt = select(Usuario.id).where(
+            func.upper(func.trim(Usuario.usuario)) == username.strip().upper()
+        )
+        return self.db.scalar(stmt)
+
     def crear_titular(self, datos: dict, fecha_ingreso: date) -> int:
         campos = {
             atributo: datos.get(campo)
@@ -652,6 +658,7 @@ class TitularesBeneficiariosRepository:
             estado=ESTADO_ACTIVO,
             fecha_ingreso=fecha_ingreso,
             fecha_registro=datetime.now(),
+            renovado="N",
         )
         self.db.add(titular)
         self.db.commit()
