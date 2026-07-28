@@ -606,6 +606,7 @@ class TitularesBeneficiariosRepository:
             tipo_afiliado=anterior.tipo_afiliado,
             fecha_ingreso=anterior.fecha_ingreso,
             fecha_registro=datetime.now(),
+            renovado="N",  # ver comentario en crear_beneficiario: NOT NULL sin default aplicable si se manda NULL
         )
         self.db.add(nuevo)
 
@@ -701,6 +702,10 @@ class TitularesBeneficiariosRepository:
             tipo_afiliado="2",
             fecha_ingreso=fecha_ingreso,
             fecha_registro=datetime.now(),
+            # RENOVADO es NOT NULL en Oracle con DEFAULT 'N', pero ese default solo aplica si la
+            # columna se omite del INSERT; SQLAlchemy la manda explicita como NULL si no se fija
+            # aca, lo que revienta con ORA-01400 (a diferencia de INTRANET_PLANLIGA, que lo tolera).
+            renovado="N",
         )
         self.db.add(beneficiario)
         self.db.commit()
