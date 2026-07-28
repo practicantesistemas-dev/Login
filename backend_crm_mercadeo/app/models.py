@@ -304,7 +304,7 @@ class Bitacora(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     usuario_id: Mapped[int | None] = mapped_column(ForeignKey("intranet_usuarios.id"))
     contacto_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_contactos.id"))
-    empresa_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_empresas.id"))
+    nombre_empresa: Mapped[str | None] = mapped_column(String(200))
     oportunidad_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_oportunidades.id"))
     titular_id: Mapped[int | None] = mapped_column(ForeignKey("intranet_planliga.id"))
     tipo: Mapped[str | None] = mapped_column(String(50))

@@ -1,4 +1,4 @@
-from app.models import Bitacora, Contacto, Empresa, Oportunidad, PlanLiga, PlanLigaTipoPlan, Usuario
+from app.models import Bitacora, Contacto, Oportunidad, PlanLiga, PlanLigaTipoPlan, Usuario
 from app.modules.administracion.bitacora.repository import BitacoraRepository
 from app.modules.administracion.bitacora.schemas import BitacoraCreate, BitacoraItem, BitacoraListado
 from app.shared.enums import TipoActividadBitacora
@@ -15,7 +15,6 @@ def _nombre_contacto(contacto: Contacto | None) -> str | None:
 def _item(
     bitacora: Bitacora,
     contacto: Contacto | None,
-    empresa: Empresa | None,
     usuario: Usuario | None,
     oportunidad: Oportunidad | None,
     servicio_oportunidad: PlanLigaTipoPlan | None,
@@ -25,9 +24,6 @@ def _item(
     plan_nombre = servicio_oportunidad.nombre if servicio_oportunidad else None
     if plan_nombre is None and tipo_plan_titular is not None:
         plan_nombre = tipo_plan_titular.nombre
-
-    empresa_id = bitacora.empresa_id or (oportunidad.empresa_id if oportunidad else None)
-    empresa_nombre = empresa.razon_social if empresa else None
 
     return BitacoraItem(
         id=bitacora.id,
@@ -40,8 +36,7 @@ def _item(
         usuario_nombre=usuario.nombres if usuario else None,
         contacto_id=bitacora.contacto_id,
         contacto_nombre=_nombre_contacto(contacto),
-        empresa_id=empresa_id,
-        empresa_nombre=empresa_nombre,
+        nombre_empresa=bitacora.nombre_empresa,
         oportunidad_id=bitacora.oportunidad_id,
         titular_id=bitacora.titular_id,
         plan_nombre=plan_nombre,
@@ -63,7 +58,6 @@ class BitacoraService:
         tipo: TipoActividadBitacora | None = None,
         q: str | None = None,
         contacto_id: int | None = None,
-        empresa_id: int | None = None,
         oportunidad_id: int | None = None,
         titular_id: int | None = None,
         skip: int = 0,
@@ -73,7 +67,6 @@ class BitacoraService:
             tipo=tipo.value if tipo else None,
             q=q,
             contacto_id=contacto_id,
-            empresa_id=empresa_id,
             oportunidad_id=oportunidad_id,
             titular_id=titular_id,
             skip=skip,
@@ -81,7 +74,6 @@ class BitacoraService:
         )
         conteo = self.repository.conteo_por_tipo(
             contacto_id=contacto_id,
-            empresa_id=empresa_id,
             oportunidad_id=oportunidad_id,
             titular_id=titular_id,
         )

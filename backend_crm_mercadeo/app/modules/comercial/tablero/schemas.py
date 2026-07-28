@@ -27,8 +27,7 @@ class ActividadRecienteItem(BaseModel):
     fecha: datetime | None = None
     contacto_id: int | None = None
     contacto_nombre: str | None = None
-    empresa_id: int | None = None
-    empresa_nombre: str | None = None
+    nombre_empresa: str | None = None
     usuario_id: int | None = None
     usuario_nombre: str | None = None
 

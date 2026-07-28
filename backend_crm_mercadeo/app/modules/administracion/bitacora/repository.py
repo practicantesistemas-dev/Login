@@ -1,7 +1,7 @@
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, aliased
 
-from app.models import Bitacora, Contacto, Empresa, Oportunidad, PlanLiga, PlanLigaTipoPlan, Usuario
+from app.models import Bitacora, Contacto, Oportunidad, PlanLiga, PlanLigaTipoPlan, Usuario
 from app.shared.database.base_repository import BaseRepository
 
 ServicioOportunidad = aliased(PlanLigaTipoPlan)
@@ -13,9 +13,8 @@ class BitacoraRepository(BaseRepository[Bitacora]):
 
     def _query_base(self):
         return (
-            select(Bitacora, Contacto, Empresa, Usuario, Oportunidad, ServicioOportunidad, PlanLiga, TipoPlanTitular)
+            select(Bitacora, Contacto, Usuario, Oportunidad, ServicioOportunidad, PlanLiga, TipoPlanTitular)
             .outerjoin(Contacto, Bitacora.contacto_id == Contacto.id)
-            .outerjoin(Empresa, Bitacora.empresa_id == Empresa.id)
             .outerjoin(Usuario, Bitacora.usuario_id == Usuario.id)
             .outerjoin(Oportunidad, Bitacora.oportunidad_id == Oportunidad.id)
             .outerjoin(ServicioOportunidad, Oportunidad.servicio_id == ServicioOportunidad.id)
@@ -28,7 +27,6 @@ class BitacoraRepository(BaseRepository[Bitacora]):
         tipo: str | None,
         q: str | None,
         contacto_id: int | None,
-        empresa_id: int | None,
         oportunidad_id: int | None,
         titular_id: int | None,
     ) -> list:
@@ -37,8 +35,6 @@ class BitacoraRepository(BaseRepository[Bitacora]):
             condiciones.append(Bitacora.tipo == tipo)
         if contacto_id is not None:
             condiciones.append(Bitacora.contacto_id == contacto_id)
-        if empresa_id is not None:
-            condiciones.append(Bitacora.empresa_id == empresa_id)
         if oportunidad_id is not None:
             condiciones.append(Bitacora.oportunidad_id == oportunidad_id)
         if titular_id is not None:
@@ -49,7 +45,7 @@ class BitacoraRepository(BaseRepository[Bitacora]):
                 or_(
                     func.upper(Contacto.nombre1).like(patron),
                     func.upper(Contacto.apellido1).like(patron),
-                    func.upper(Empresa.razon_social).like(patron),
+                    func.upper(Bitacora.nombre_empresa).like(patron),
                     func.upper(Bitacora.descripcion).like(patron),
                 )
             )
@@ -60,13 +56,12 @@ class BitacoraRepository(BaseRepository[Bitacora]):
         tipo: str | None = None,
         q: str | None = None,
         contacto_id: int | None = None,
-        empresa_id: int | None = None,
         oportunidad_id: int | None = None,
         titular_id: int | None = None,
         skip: int = 0,
         limit: int = 100,
     ) -> tuple[list, int]:
-        condiciones = self._filtros(tipo, q, contacto_id, empresa_id, oportunidad_id, titular_id)
+        condiciones = self._filtros(tipo, q, contacto_id, oportunidad_id, titular_id)
 
         total = self.db.scalar(
             select(func.count()).select_from(self._query_base().where(*condiciones).subquery())
@@ -91,11 +86,10 @@ class BitacoraRepository(BaseRepository[Bitacora]):
     def conteo_por_tipo(
         self,
         contacto_id: int | None = None,
-        empresa_id: int | None = None,
         oportunidad_id: int | None = None,
         titular_id: int | None = None,
     ) -> list[tuple[str | None, int]]:
-        condiciones = self._filtros(None, None, contacto_id, empresa_id, oportunidad_id, titular_id)
+        condiciones = self._filtros(None, None, contacto_id, oportunidad_id, titular_id)
         stmt = (
             select(Bitacora.tipo, func.count(Bitacora.id))
             .where(*condiciones)

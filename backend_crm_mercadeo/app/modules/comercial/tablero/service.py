@@ -65,12 +65,11 @@ class TableroService:
                 fecha=bitacora.fecha,
                 contacto_id=bitacora.contacto_id,
                 contacto_nombre=_nombre_contacto(contacto),
-                empresa_id=bitacora.empresa_id,
-                empresa_nombre=empresa.razon_social if empresa else None,
+                nombre_empresa=bitacora.nombre_empresa,
                 usuario_id=bitacora.usuario_id,
                 usuario_nombre=usuario.nombres if usuario else None,
             )
-            for bitacora, contacto, empresa, usuario in filas
+            for bitacora, contacto, usuario in filas
         ]
 
     def distribucion_contactos(self, periodo: Periodo = "30d") -> DistribucionContactos:

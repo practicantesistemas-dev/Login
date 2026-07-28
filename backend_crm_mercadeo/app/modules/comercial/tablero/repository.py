@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 from app.models import (
     Bitacora,
     Contacto,
-    Empresa,
     EtapaEmbudo,
     Oportunidad,
     PlanLiga,
@@ -92,16 +91,15 @@ class TableroRepository:
 
     def actividad_reciente(
         self, limit: int
-    ) -> list[tuple[Bitacora, Contacto | None, Empresa | None, Usuario | None]]:
+    ) -> list[tuple[Bitacora, Contacto | None, Usuario | None]]:
         stmt = (
-            select(Bitacora, Contacto, Empresa, Usuario)
+            select(Bitacora, Contacto, Usuario)
             .outerjoin(Contacto, Bitacora.contacto_id == Contacto.id)
-            .outerjoin(Empresa, Bitacora.empresa_id == Empresa.id)
             .outerjoin(Usuario, Bitacora.usuario_id == Usuario.id)
             .order_by(Bitacora.fecha.desc())
             .limit(limit)
         )
-        return [(row[0], row[1], row[2], row[3]) for row in self.db.execute(stmt).all()]
+        return [(row[0], row[1], row[2]) for row in self.db.execute(stmt).all()]
 
     def contar_total_contactos(self, desde: datetime | None, hasta: datetime | None) -> int:
         stmt = select(func.count()).select_from(Contacto).where(
