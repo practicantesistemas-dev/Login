@@ -80,7 +80,7 @@ alembic current   # revisión aplicada actualmente en la base de datos
 alembic history   # historial completo de migraciones
 ```
 
-## 5. Levantar el servidor
+## 5. Le.psvantar el servidor
 
 ```powershell
 uvicorn main:app --reload

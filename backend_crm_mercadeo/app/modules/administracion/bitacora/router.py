@@ -42,3 +42,12 @@ def registrar_seguimiento(
     service: BitacoraService = Depends(get_bitacora_service),
 ) -> BitacoraRead:
     return service.create(data, username=username)
+
+
+@router.delete("/{id_bitacora}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_seguimiento(
+    id_bitacora: int,
+    username: str = Depends(get_current_username),
+    service: BitacoraService = Depends(get_bitacora_service),
+) -> None:
+    service.delete(id_bitacora)

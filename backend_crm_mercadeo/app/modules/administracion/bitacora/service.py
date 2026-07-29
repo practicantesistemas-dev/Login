@@ -1,4 +1,5 @@
 from app.models import Bitacora, Contacto, Oportunidad, PlanLiga, PlanLigaTipoPlan, Usuario
+from app.modules.administracion.bitacora.exceptions import BitacoraNotFoundError
 from app.modules.administracion.bitacora.repository import BitacoraRepository
 from app.modules.administracion.bitacora.schemas import BitacoraCreate, BitacoraItem, BitacoraListado
 from app.shared.enums import TipoActividadBitacora
@@ -52,6 +53,12 @@ class BitacoraService:
             **data.model_dump(), usuario_id=self.repository.obtener_usuario_id(username)
         )
         return self.repository.create(bitacora)
+
+    def delete(self, id_bitacora: int) -> None:
+        bitacora = self.repository.get(id_bitacora)
+        if bitacora is None:
+            raise BitacoraNotFoundError(id_bitacora)
+        self.repository.delete(bitacora)
 
     def listar(
         self,
