@@ -16,7 +16,7 @@ def get_departamentos(
 
 
 @router.get("/municipios", response_model=list[MunicipioItem])
-def get_municipios(
+def get_municipios( 
     departamento: str | None = Query(
         None, description="Codigo o nombre (parcial) del departamento para filtrar"
     ),
