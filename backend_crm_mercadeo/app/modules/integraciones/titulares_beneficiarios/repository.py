@@ -314,24 +314,33 @@ class TitularesBeneficiariosRepository:
                 condiciones.append(PlanLiga.fecha_nacimiento > fecha_min)
 
         if busqueda and busqueda.strip():
-            termino = f"%{busqueda.strip().upper()}%"
-            nombre_completo = (
+            # Se colapsan espacios repetidos (' +' -> ' ') porque nombre2/apellido2
+            # suelen venir NULL: el coalesce a "" deja un espacio "vacio" entre
+            # partes (ej. "ARGENIS" + " " + "" + " " + "GALINDEZ" = doble espacio),
+            # y sin normalizar eso, buscar el nombre completo con espacios simples
+            # no hacia match aunque buscar una sola palabra si funcionara.
+            termino = f"%{' '.join(busqueda.split()).upper()}%"
+            nombre_completo = func.regexp_replace(
                 func.coalesce(PlanLiga.nombre1, "")
                 + literal_column("' '")
                 + func.coalesce(PlanLiga.nombre2, "")
                 + literal_column("' '")
                 + func.coalesce(PlanLiga.apellido1, "")
                 + literal_column("' '")
-                + func.coalesce(PlanLiga.apellido2, "")
+                + func.coalesce(PlanLiga.apellido2, ""),
+                literal_column("' +'"),
+                literal_column("' '"),
             )
-            nombre_completo_beneficiario = (
+            nombre_completo_beneficiario = func.regexp_replace(
                 func.coalesce(PlanLigaBeneficiario.nombre1, "")
                 + literal_column("' '")
                 + func.coalesce(PlanLigaBeneficiario.nombre2, "")
                 + literal_column("' '")
                 + func.coalesce(PlanLigaBeneficiario.apellido1, "")
                 + literal_column("' '")
-                + func.coalesce(PlanLigaBeneficiario.apellido2, "")
+                + func.coalesce(PlanLigaBeneficiario.apellido2, ""),
+                literal_column("' +'"),
+                literal_column("' '"),
             )
             condiciones.append(
                 or_(
