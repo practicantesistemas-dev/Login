@@ -146,6 +146,10 @@ def _cupo_plan() -> ColumnElement:
     Requiere que PlanLiga este outer-joineado con PlanLigaTipoPlan: si el
     titular no tiene tipo_plan_id (Plan Estandar implicito, sin fila propia
     en el catalogo), el cupo es la base fija.
+
+    Si el tipo_plan tiene BENEFICIARIOS = 0 y sin adicionales (ej. "Empresarial
+    Individual"), el cupo de beneficiarios queda en 0: el plan es "1 de 1"
+    (solo el titular, sin espacio para beneficiarios).
     """
     return case(
         (PlanLiga.tipo_plan_id.is_(None), BENEFICIARIOS_PLAN_ESTANDAR),
