@@ -241,6 +241,14 @@ class TitularesBeneficiariosRepository:
         fila = self.db.execute(stmt).mappings().first()
         return dict(fila) if fila is not None else None
 
+    def obtener_beneficiario_por_id(self, id_beneficiario: int) -> dict | None:
+        stmt = select(
+            *_columnas_beneficiario(),
+            PlanLigaBeneficiario.planliga_id.label("PLANLIGA_ID"),
+        ).where(PlanLigaBeneficiario.id == id_beneficiario)
+        fila = self.db.execute(stmt).mappings().first()
+        return dict(fila) if fila is not None else None
+
     def buscar_beneficiario_por_documento(self, documento: str) -> dict | None:
         stmt = select(
             PlanLigaBeneficiario.id.label("ID"),
@@ -248,6 +256,13 @@ class TitularesBeneficiariosRepository:
         ).where(PlanLigaBeneficiario.documento == documento)
         fila = self.db.execute(stmt).mappings().first()
         return dict(fila) if fila is not None else None
+
+    def buscar_titulares_por_documento(self, documento: str) -> list[dict]:
+        stmt = select(
+            PlanLiga.id.label("ID_TITULAR"),
+            PlanLiga.estado.label("ESTADO"),
+        ).where(PlanLiga.documento == documento)
+        return [dict(row) for row in self.db.execute(stmt).mappings().all()]
 
     def listar_planes(self) -> list[PlanLigaTipoPlan]:
         stmt = (
@@ -534,6 +549,28 @@ class TitularesBeneficiariosRepository:
         self.db.commit()
         return True
 
+    def cambiar_titular_beneficiario(
+        self,
+        id_titular_actual: int,
+        id_beneficiario: int,
+        id_titular_nuevo: int,
+        orden: int,
+        tipo_plan: str | None,
+        fecha_ingreso: date,
+    ) -> bool:
+        """Mueve el beneficiario al nuevo titular heredando lo que comparten
+        todos los beneficiarios de ese grupo: tipo_plan y fecha_ingreso (los
+        mismos campos que crear_beneficiario toma del titular al dar de alta)."""
+        beneficiario = self.db.get(PlanLigaBeneficiario, id_beneficiario)
+        if beneficiario is None or beneficiario.planliga_id != id_titular_actual:
+            return False
+        beneficiario.planliga_id = id_titular_nuevo
+        beneficiario.orden = orden
+        beneficiario.tipo_plan = tipo_plan
+        beneficiario.fecha_ingreso = fecha_ingreso
+        self.db.commit()
+        return True
+
     def reemplazar_titular(
         self, id_titular_anterior: int, datos: dict
     ) -> tuple[int, int] | None:
@@ -677,7 +714,8 @@ class TitularesBeneficiariosRepository:
 
     def contar_beneficiarios(self, id_titular: int) -> int:
         stmt = select(func.count()).select_from(PlanLigaBeneficiario).where(
-            PlanLigaBeneficiario.planliga_id == id_titular
+            PlanLigaBeneficiario.planliga_id == id_titular,
+            PlanLigaBeneficiario.estado == ESTADO_ACTIVO,
         )
         return self.db.scalar(stmt) or 0
 

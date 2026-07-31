@@ -2,8 +2,18 @@ from app.core.exceptions import ConflictError, NotFoundError
 
 
 class TitularNotFoundError(NotFoundError):
-    def __init__(self, id_titular: int) -> None:
+    def __init__(self, id_titular: int | str) -> None:
         super().__init__(detail=f"Titular {id_titular} no encontrado")
+
+
+class TitularAmbiguoError(ConflictError):
+    def __init__(self, documento: str) -> None:
+        super().__init__(
+            detail=(
+                f"Existe mas de un titular con el documento {documento}; "
+                "no se puede determinar a cual asociar el beneficiario"
+            )
+        )
 
 
 class BeneficiarioNotFoundError(NotFoundError):

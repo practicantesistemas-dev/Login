@@ -245,6 +245,12 @@ class BeneficiarioUpdate(BaseModel):
     ESTADO: Optional[str] = None
 
 
+class CambioTitularBeneficiario(BaseModel):
+    """Documento (cedula) del titular al que se va a mover el beneficiario."""
+
+    DOCUMENTO_TITULAR_NUEVO: str
+
+
 class ReemplazoBeneficiarioResultado(BaseModel):
     beneficiario_anterior_id: int
     beneficiario_nuevo: BeneficiarioDetalle

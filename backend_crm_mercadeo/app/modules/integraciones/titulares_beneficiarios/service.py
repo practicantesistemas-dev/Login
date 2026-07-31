@@ -8,6 +8,7 @@ from app.modules.integraciones.titulares_beneficiarios.exceptions import (
     BeneficiarioNotFoundError,
     CupoBeneficiariosExcedidoError,
     DocumentoDuplicadoError,
+    TitularAmbiguoError,
     TitularInactivoError,
     TitularNotFoundError,
 )
@@ -159,6 +160,45 @@ class TitularesBeneficiariosService:
         if not self.repository.actualizar_beneficiario(id_titular, id_beneficiario, cambios):
             raise BeneficiarioNotFoundError(id_beneficiario)
         fila = self.repository.obtener_beneficiario(id_titular, id_beneficiario)
+        return BeneficiarioDetalle(**fila)
+
+    def cambiar_titular_beneficiario(
+        self, id_beneficiario: int, documento_titular_nuevo: str
+    ) -> BeneficiarioDetalle:
+        beneficiario_actual = self.repository.obtener_beneficiario_por_id(id_beneficiario)
+        if beneficiario_actual is None:
+            raise BeneficiarioNotFoundError(id_beneficiario)
+        id_titular_actual = beneficiario_actual["PLANLIGA_ID"]
+
+        titulares = self.repository.buscar_titulares_por_documento(documento_titular_nuevo)
+        if not titulares:
+            raise TitularNotFoundError(documento_titular_nuevo)
+        if len(titulares) > 1:
+            raise TitularAmbiguoError(documento_titular_nuevo)
+
+        titular_nuevo = titulares[0]
+        id_titular_nuevo = titular_nuevo["ID_TITULAR"]
+        if titular_nuevo["ESTADO"] != ESTADO_ACTIVO:
+            raise TitularInactivoError(id_titular_nuevo, accion="mover el beneficiario")
+
+        cantidad_actual = self.repository.contar_beneficiarios(id_titular_nuevo)
+        cupo = self.repository.cupo_beneficiarios_titular(id_titular_nuevo)
+        if cantidad_actual >= cupo:
+            raise CupoBeneficiariosExcedidoError(id_titular_nuevo)
+
+        detalle_titular_nuevo = self.repository.obtener_titular(id_titular_nuevo)
+        fecha_ingreso_nuevo = self.repository.obtener_fecha_ingreso_titular(id_titular_nuevo)
+        if not self.repository.cambiar_titular_beneficiario(
+            id_titular_actual,
+            id_beneficiario,
+            id_titular_nuevo,
+            cantidad_actual + 1,
+            detalle_titular_nuevo["TIPO_PLAN"],
+            fecha_ingreso_nuevo,
+        ):
+            raise BeneficiarioNotFoundError(id_beneficiario)
+
+        fila = self.repository.obtener_beneficiario(id_titular_nuevo, id_beneficiario)
         return BeneficiarioDetalle(**fila)
 
     def reemplazar_titular(

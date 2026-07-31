@@ -17,6 +17,7 @@ from app.modules.integraciones.titulares_beneficiarios.schemas import (
     BeneficiarioCrear,
     BeneficiarioDetalle,
     BeneficiarioUpdate,
+    CambioTitularBeneficiario,
     CreacionBeneficiarioResultado,
     CreacionTitularResultado,
     DesactivacionBeneficiarioResultado,
@@ -221,6 +222,18 @@ def desactivar_beneficiario_sin_titular(
     service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
 ) -> DesactivacionBeneficiarioResultado:
     return service.desactivar_beneficiario_sin_titular(documento)
+
+
+@router.post(
+    "/beneficiarios/{id_beneficiario}/cambiar-titular",
+    response_model=BeneficiarioDetalle,
+)
+def cambiar_titular_beneficiario(
+    id_beneficiario: int,
+    data: CambioTitularBeneficiario,
+    service: TitularesBeneficiariosService = Depends(get_titulares_beneficiarios_service),
+) -> BeneficiarioDetalle:
+    return service.cambiar_titular_beneficiario(id_beneficiario, data.DOCUMENTO_TITULAR_NUEVO)
 
 
 @router.post(
