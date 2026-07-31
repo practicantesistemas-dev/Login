@@ -52,14 +52,6 @@ class TableroRepository:
         )
         return self._contar_seguro(stmt)
 
-    def contar_empresas_vinculadas(self, desde: datetime | None, hasta: datetime | None) -> int:
-        empresa_normalizada = func.upper(func.trim(PlanLiga.empresa))
-        stmt = select(func.count(func.distinct(empresa_normalizada))).where(
-            PlanLiga.empresa.isnot(None),
-            *_rango(PlanLiga.fecha_registro, desde, hasta),
-        )
-        return self._contar_seguro(stmt)
-
     def contar_oportunidades_en_curso(self, desde: datetime | None, hasta: datetime | None) -> int:
         stmt = select(func.count()).select_from(Oportunidad).where(
             Oportunidad.estado.isnot(None),
@@ -91,15 +83,16 @@ class TableroRepository:
 
     def actividad_reciente(
         self, limit: int
-    ) -> list[tuple[Bitacora, Contacto | None, Usuario | None]]:
+    ) -> list[tuple[Bitacora, Contacto | None, Usuario | None, PlanLiga | None]]:
         stmt = (
-            select(Bitacora, Contacto, Usuario)
+            select(Bitacora, Contacto, Usuario, PlanLiga)
             .outerjoin(Contacto, Bitacora.contacto_id == Contacto.id)
             .outerjoin(Usuario, Bitacora.usuario_id == Usuario.id)
+            .outerjoin(PlanLiga, Bitacora.titular_id == PlanLiga.id)
             .order_by(Bitacora.fecha.desc())
             .limit(limit)
         )
-        return [(row[0], row[1], row[2]) for row in self.db.execute(stmt).all()]
+        return [(row[0], row[1], row[2], row[3]) for row in self.db.execute(stmt).all()]
 
     def contar_total_contactos(self, desde: datetime | None, hasta: datetime | None) -> int:
         stmt = select(func.count()).select_from(Contacto).where(

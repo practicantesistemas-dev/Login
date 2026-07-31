@@ -13,7 +13,6 @@ class KpiItem(BaseModel):
 class ResumenDashboard(BaseModel):
     contactos: KpiItem
     titulares_pl: KpiItem
-    empresas: KpiItem
     oportunidades: KpiItem
     servicios: KpiItem
     seguimientos: KpiItem
@@ -28,6 +27,8 @@ class ActividadRecienteItem(BaseModel):
     contacto_id: int | None = None
     contacto_nombre: str | None = None
     nombre_empresa: str | None = None
+    titular_id: int | None = None
+    titular_nombre: str | None = None
     usuario_id: int | None = None
     usuario_nombre: str | None = None
 

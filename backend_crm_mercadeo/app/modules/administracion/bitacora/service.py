@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from app.models import Bitacora, Contacto, Oportunidad, PlanLiga, PlanLigaTipoPlan, Usuario
 from app.modules.administracion.bitacora.exceptions import BitacoraNotFoundError
 from app.modules.administracion.bitacora.repository import BitacoraRepository
@@ -49,8 +51,11 @@ class BitacoraService:
         self.repository = BitacoraRepository(db)
 
     def create(self, data: BitacoraCreate, username: str) -> Bitacora:
+        campos = data.model_dump(exclude={"fecha"})
         bitacora = Bitacora(
-            **data.model_dump(), usuario_id=self.repository.obtener_usuario_id(username)
+            **campos,
+            fecha=datetime.now(),
+            usuario_id=self.repository.obtener_usuario_id(username),
         )
         return self.repository.create(bitacora)
 

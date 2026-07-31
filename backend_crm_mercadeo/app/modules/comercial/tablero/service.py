@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
-from app.models import Contacto
+from app.models import Contacto, PlanLiga
 from app.modules.comercial.tablero.repository import TableroRepository
 from app.modules.comercial.tablero.schemas import (
     ActividadRecienteItem,
@@ -32,7 +32,14 @@ def _inicio_periodo(periodo: Periodo, ahora: datetime) -> datetime | None:
 def _nombre_contacto(contacto: Contacto | None) -> str | None:
     if contacto is None:
         return None
-    partes = [contacto.nombre1, contacto.apellido1]
+    partes = [contacto.nombre1, contacto.nombre2, contacto.apellido1, contacto.apellido2]
+    return " ".join(parte for parte in partes if parte)
+
+
+def _nombre_titular(titular: PlanLiga | None) -> str | None:
+    if titular is None:
+        return None
+    partes = [titular.nombre1, titular.nombre2, titular.apellido1, titular.apellido2]
     return " ".join(parte for parte in partes if parte)
 
 
@@ -48,7 +55,6 @@ class TableroService:
         return ResumenDashboard(
             contactos=KpiItem(valor=r.contar_contactos(desde, ahora)),
             titulares_pl=KpiItem(valor=r.contar_titulares_pl_activos(desde, ahora)),
-            empresas=KpiItem(valor=r.contar_empresas_vinculadas(desde, ahora)),
             oportunidades=KpiItem(valor=r.contar_oportunidades_en_curso(desde, ahora)),
             servicios=KpiItem(valor=r.contar_servicios_plan_liga_activos()),
             seguimientos=KpiItem(valor=r.contar_seguimientos_pendientes(desde, ahora)),
@@ -66,10 +72,12 @@ class TableroService:
                 contacto_id=bitacora.contacto_id,
                 contacto_nombre=_nombre_contacto(contacto),
                 nombre_empresa=bitacora.nombre_empresa,
+                titular_id=bitacora.titular_id,
+                titular_nombre=_nombre_titular(titular) or _nombre_contacto(contacto),
                 usuario_id=bitacora.usuario_id,
                 usuario_nombre=usuario.nombres if usuario else None,
             )
-            for bitacora, contacto, usuario in filas
+            for bitacora, contacto, usuario, titular in filas
         ]
 
     def distribucion_contactos(self, periodo: Periodo = "30d") -> DistribucionContactos:
