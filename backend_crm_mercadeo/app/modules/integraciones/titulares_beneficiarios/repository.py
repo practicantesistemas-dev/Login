@@ -795,9 +795,11 @@ class TitularesBeneficiariosRepository:
     def activar_beneficiarios(self, id_titular: int, fecha_ingreso: date) -> int:
         stmt = (
             update(PlanLigaBeneficiario)
-            .where(PlanLigaBeneficiario.planliga_id == id_titular)
+            .where(
+                PlanLigaBeneficiario.planliga_id == id_titular,
+                PlanLigaBeneficiario.estado == ESTADO_ACTIVO,
+            )
             .values(
-                estado=ESTADO_ACTIVO,
                 fecha_ingreso=fecha_ingreso,
                 renovado="S",
             )

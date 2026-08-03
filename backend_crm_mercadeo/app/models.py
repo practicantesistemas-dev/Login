@@ -241,6 +241,7 @@ class Contacto(Base):
 
     etiquetas: Mapped[list["ContactoEtiqueta"]] = relationship(back_populates="contacto")
     responsable: Mapped["Usuario | None"] = relationship(back_populates="contactos")
+    empresa: Mapped["Empresa | None"] = relationship()
 
 
 class Embudo(Base):
