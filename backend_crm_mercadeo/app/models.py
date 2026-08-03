@@ -239,7 +239,11 @@ class Contacto(Base):
         DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
     )
 
-    etiquetas: Mapped[list["ContactoEtiqueta"]] = relationship(back_populates="contacto")
+    etiquetas: Mapped[list["ContactoEtiqueta"]] = relationship(
+        back_populates="contacto", cascade="all, delete-orphan"
+    )
+    bitacoras: Mapped[list["Bitacora"]] = relationship(cascade="all, delete-orphan")
+    oportunidades: Mapped[list["Oportunidad"]] = relationship(cascade="all, delete-orphan")
     responsable: Mapped["Usuario | None"] = relationship(back_populates="contactos")
     empresa: Mapped["Empresa | None"] = relationship()
 
@@ -293,6 +297,7 @@ class Oportunidad(Base):
     servicio: Mapped["PlanLigaTipoPlan | None"] = relationship(back_populates="oportunidades")
     plan_liga_titular: Mapped["PlanLiga | None"] = relationship(back_populates="oportunidades")
     responsable: Mapped["Usuario | None"] = relationship(back_populates="oportunidades")
+    bitacoras: Mapped[list["Bitacora"]] = relationship(cascade="all, delete-orphan")
 
 
 class Bitacora(Base):

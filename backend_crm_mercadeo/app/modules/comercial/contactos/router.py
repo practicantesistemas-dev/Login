@@ -13,20 +13,22 @@ router = APIRouter(prefix="/contactos", tags=["Contactos"])
 def list_contactos(
     q: str | None = Query(None, description="Busca por nombre, cedula o empresa"),
     estado: str | None = None,
-    ciudad: str | None = None,
+    municipio: str | None = None,
+    departamento: str | None = None,
     responsable_id: int | None = None,
     sexo: str | None = None,
     tipo_contacto: TipoContacto | None = None,
     edad_min: int | None = Query(None, ge=0),
     edad_max: int | None = Query(None, ge=0),
     skip: int = 0,
-    limit: int = 100,
+    limit: int = Query(6, ge=1, le=6),
     service: ContactoService = Depends(get_contacto_service),
 ) -> list[ContactoRead]:
     return service.list(
         q=q,
         estado=estado,
-        ciudad=ciudad,
+        municipio=municipio,
+        departamento=departamento,
         responsable_id=responsable_id,
         sexo=sexo,
         tipo_contacto=tipo_contacto,
@@ -60,3 +62,10 @@ def eliminar_etiqueta_contacto(
     service: ContactoService = Depends(get_contacto_service),
 ) -> None:
     service.eliminar_etiqueta(contacto_id, etiqueta_id)
+
+
+@router.delete("/{contacto_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_contacto(
+    contacto_id: int, service: ContactoService = Depends(get_contacto_service)
+) -> None:
+    service.delete(contacto_id)

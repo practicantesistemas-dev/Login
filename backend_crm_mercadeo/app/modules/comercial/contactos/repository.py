@@ -33,7 +33,8 @@ class ContactoRepository(BaseRepository[Contacto]):
         self,
         q: str | None,
         estado: str | None,
-        ciudad: str | None,
+        municipio: str | None,
+        departamento: str | None,
         responsable_id: int | None,
         sexo: str | None,
         tipo_contacto: TipoContacto | None,
@@ -43,8 +44,10 @@ class ContactoRepository(BaseRepository[Contacto]):
         condiciones = []
         if estado is not None:
             condiciones.append(Contacto.estado == estado)
-        if ciudad is not None:
-            condiciones.append(func.upper(Contacto.municipio) == ciudad.upper())
+        if municipio is not None:
+            condiciones.append(func.upper(Contacto.municipio) == municipio.upper())
+        if departamento is not None:
+            condiciones.append(func.upper(Contacto.departamento) == departamento.upper())
         if responsable_id is not None:
             condiciones.append(Contacto.responsable_id == responsable_id)
         if sexo is not None:
@@ -75,7 +78,8 @@ class ContactoRepository(BaseRepository[Contacto]):
         self,
         q: str | None = None,
         estado: str | None = None,
-        ciudad: str | None = None,
+        municipio: str | None = None,
+        departamento: str | None = None,
         responsable_id: int | None = None,
         sexo: str | None = None,
         tipo_contacto: TipoContacto | None = None,
@@ -85,7 +89,15 @@ class ContactoRepository(BaseRepository[Contacto]):
         limit: int = 100,
     ) -> list[Contacto]:
         condiciones = self._filtros(
-            q, estado, ciudad, responsable_id, sexo, tipo_contacto, edad_min, edad_max
+            q,
+            estado,
+            municipio,
+            departamento,
+            responsable_id,
+            sexo,
+            tipo_contacto,
+            edad_min,
+            edad_max,
         )
         stmt = (
             select(Contacto)

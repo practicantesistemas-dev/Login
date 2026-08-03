@@ -65,7 +65,8 @@ class ContactoService:
         self,
         q: str | None = None,
         estado: str | None = None,
-        ciudad: str | None = None,
+        municipio: str | None = None,
+        departamento: str | None = None,
         responsable_id: int | None = None,
         sexo: str | None = None,
         tipo_contacto: TipoContacto | None = None,
@@ -77,7 +78,8 @@ class ContactoService:
         contactos = self.repository.buscar(
             q=q,
             estado=estado,
-            ciudad=ciudad,
+            municipio=municipio,
+            departamento=departamento,
             responsable_id=responsable_id,
             sexo=sexo,
             tipo_contacto=tipo_contacto,
@@ -117,3 +119,9 @@ class ContactoService:
         if asociacion is None:
             raise ContactoEtiquetaNotFoundError(contacto_id, etiqueta_id)
         self.repository.delete(asociacion)
+
+    def delete(self, contacto_id: int) -> None:
+        contacto = self.repository.get(contacto_id)
+        if contacto is None:
+            raise ContactoNotFoundError(contacto_id)
+        self.repository.delete(contacto)
