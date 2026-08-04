@@ -59,6 +59,10 @@ class BitacoraService:
         )
         return self.repository.create(bitacora)
 
+    def historial_contacto(self, contacto_id: int, limit: int = 4) -> list[BitacoraItem]:
+        filas = self.repository.ultimos_por_contacto(contacto_id, limit=limit)
+        return [_item(*fila) for fila in filas]
+
     def delete(self, id_bitacora: int) -> None:
         bitacora = self.repository.get(id_bitacora)
         if bitacora is None:

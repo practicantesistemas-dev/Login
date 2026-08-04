@@ -13,6 +13,7 @@ from app.modules.comercial.contactos.schemas import (
     ContactoEmpresaResumen,
     ContactoRead,
     ContactoResponsableResumen,
+    ContactoUpdate,
 )
 from app.modules.marketing.etiquetas.schemas import EtiquetaRead
 from app.shared.enums import TipoContacto
@@ -112,6 +113,35 @@ class ContactoService:
                 )
 
         contacto = self.repository.create(contacto)
+        return _to_read(contacto)
+
+    def update(self, contacto_id: int, data: ContactoUpdate, username: str) -> ContactoRead:
+        contacto = self.repository.get(contacto_id)
+        if contacto is None:
+            raise ContactoNotFoundError(contacto_id)
+
+        changes = data.model_dump(exclude_unset=True, exclude={"etiqueta_ids"})
+        if changes:
+            contacto = self.repository.update(contacto, changes)
+
+        if data.etiqueta_ids is not None:
+            usuario_id = self.repository.obtener_usuario_id(username)
+            actuales = {ce.etiqueta_id: ce for ce in contacto.etiquetas}
+            nuevos = set(data.etiqueta_ids)
+            for etiqueta_id, asociacion in list(actuales.items()):
+                if etiqueta_id not in nuevos:
+                    contacto.etiquetas.remove(asociacion)
+            ahora = datetime.now()
+            for etiqueta_id in nuevos:
+                if etiqueta_id not in actuales:
+                    contacto.etiquetas.append(
+                        ContactoEtiqueta(
+                            etiqueta_id=etiqueta_id, usuario_id=usuario_id, fecha=ahora
+                        )
+                    )
+            self.repository.db.commit()
+            self.repository.db.refresh(contacto)
+
         return _to_read(contacto)
 
     def eliminar_etiqueta(self, contacto_id: int, etiqueta_id: int) -> None:

@@ -77,6 +77,15 @@ class BitacoraRepository(BaseRepository[Bitacora]):
         filas = list(self.db.execute(stmt).all())
         return filas, total
 
+    def ultimos_por_contacto(self, contacto_id: int, limit: int = 4) -> list:
+        stmt = (
+            self._query_base()
+            .where(Bitacora.contacto_id == contacto_id)
+            .order_by(Bitacora.fecha.desc())
+            .limit(limit)
+        )
+        return list(self.db.execute(stmt).all())
+
     def obtener_usuario_id(self, username: str) -> int | None:
         stmt = select(Usuario.id).where(
             func.upper(func.trim(Usuario.usuario)) == username.strip().upper()

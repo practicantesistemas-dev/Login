@@ -1,8 +1,11 @@
 from fastapi import APIRouter, Depends, Query, status
 
 from app.core.dependencies import get_current_username
+from app.modules.administracion.bitacora.dependencies import get_bitacora_service
+from app.modules.administracion.bitacora.schemas import BitacoraItem
+from app.modules.administracion.bitacora.service import BitacoraService
 from app.modules.comercial.contactos.dependencies import get_contacto_service
-from app.modules.comercial.contactos.schemas import ContactoCreate, ContactoRead
+from app.modules.comercial.contactos.schemas import ContactoCreate, ContactoRead, ContactoUpdate
 from app.modules.comercial.contactos.service import ContactoService
 from app.shared.enums import TipoContacto
 
@@ -53,6 +56,27 @@ def create_contacto(
     service: ContactoService = Depends(get_contacto_service),
 ) -> ContactoRead:
     return service.create(data, username=username)
+
+
+@router.get("/{contacto_id}/bitacora", response_model=list[BitacoraItem])
+def historial_bitacora_contacto(
+    contacto_id: int,
+    limit: int = Query(4, ge=1, le=50),
+    contacto_service: ContactoService = Depends(get_contacto_service),
+    bitacora_service: BitacoraService = Depends(get_bitacora_service),
+) -> list[BitacoraItem]:
+    contacto_service.get(contacto_id)
+    return bitacora_service.historial_contacto(contacto_id, limit=limit)
+
+
+@router.put("/{contacto_id}", response_model=ContactoRead)
+def update_contacto(
+    contacto_id: int,
+    data: ContactoUpdate,
+    username: str = Depends(get_current_username),
+    service: ContactoService = Depends(get_contacto_service),
+) -> ContactoRead:
+    return service.update(contacto_id, data, username=username)
 
 
 @router.delete("/{contacto_id}/etiquetas/{etiqueta_id}", status_code=status.HTTP_204_NO_CONTENT)
