@@ -380,6 +380,8 @@ class Proveedor(Base):
         DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
     )
 
+    actividades: Mapped[list["Actividad"]] = relationship(cascade="all, delete-orphan")
+
 
 class Actividad(Base):
     __tablename__ = "mercadeo_crm_actividad"

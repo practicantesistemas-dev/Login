@@ -92,7 +92,12 @@ class TableroRepository:
             .order_by(Bitacora.fecha.desc())
             .limit(limit)
         )
-        return [(row[0], row[1], row[2], row[3]) for row in self.db.execute(stmt).all()]
+        try:
+            return [(row[0], row[1], row[2], row[3]) for row in self.db.execute(stmt).all()]
+        except SQLAlchemyError:
+            logger.warning("Fallo al cargar la actividad reciente, se usa lista vacia", exc_info=True)
+            self.db.rollback()
+            return []
 
     def contar_total_contactos(self, desde: datetime | None, hasta: datetime | None) -> int:
         stmt = select(func.count()).select_from(Contacto).where(

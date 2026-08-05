@@ -47,7 +47,7 @@ class BitacoraItem(BaseModel):
     descripcion: str | None = None
     proximo_paso: str | None = None
     fecha: datetime | None = None
-    estado: EstadoBitacora
+    estado: EstadoBitacora | None = None
     usuario_id: int | None = None
     usuario_nombre: str | None = None
     contacto_id: int | None = None

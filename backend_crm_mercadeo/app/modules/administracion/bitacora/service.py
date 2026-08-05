@@ -4,7 +4,7 @@ from app.models import Bitacora, Contacto, Oportunidad, PlanLiga, PlanLigaTipoPl
 from app.modules.administracion.bitacora.exceptions import BitacoraNotFoundError
 from app.modules.administracion.bitacora.repository import BitacoraRepository
 from app.modules.administracion.bitacora.schemas import BitacoraCreate, BitacoraItem, BitacoraListado
-from app.shared.enums import TipoActividadBitacora
+from app.shared.enums import EstadoBitacora, TipoActividadBitacora
 from sqlalchemy.orm import Session
 
 
@@ -13,6 +13,18 @@ def _nombre_contacto(contacto: Contacto | None) -> str | None:
         return None
     partes = [contacto.nombre1, contacto.apellido1]
     return " ".join(parte for parte in partes if parte)
+
+
+def _estado_seguro(valor: str | None) -> EstadoBitacora | None:
+    """Tolera filas legacy con `estado` nulo o con un valor fuera de
+    {pendiente, realizado} (mayusculas, espacios, datos historicos invalidos),
+    en vez de romper la serializacion de todo el listado por una sola fila."""
+    if valor is None:
+        return None
+    try:
+        return EstadoBitacora(valor.strip().lower())
+    except ValueError:
+        return None
 
 
 def _item(
@@ -34,7 +46,7 @@ def _item(
         descripcion=bitacora.descripcion,
         proximo_paso=bitacora.proximo_paso,
         fecha=bitacora.fecha,
-        estado=bitacora.estado,
+        estado=_estado_seguro(bitacora.estado),
         usuario_id=bitacora.usuario_id,
         usuario_nombre=usuario.nombres if usuario else None,
         contacto_id=bitacora.contacto_id,
