@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 
+from app.core.dependencies import get_current_username
 from app.modules.comercial.tablero.dependencies import get_tablero_service
 from app.modules.comercial.tablero.schemas import (
     ActividadRecienteItem,
@@ -11,7 +12,9 @@ from app.modules.comercial.tablero.schemas import (
 )
 from app.modules.comercial.tablero.service import TableroService
 
-router = APIRouter(prefix="/tablero", tags=["Tablero"])
+router = APIRouter(
+    prefix="/tablero", tags=["Tablero"], dependencies=[Depends(get_current_username)]
+)
 
 
 @router.get("/resumen", response_model=ResumenDashboard)

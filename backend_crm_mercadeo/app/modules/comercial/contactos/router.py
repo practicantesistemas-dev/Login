@@ -9,7 +9,9 @@ from app.modules.comercial.contactos.schemas import ContactoCreate, ContactoRead
 from app.modules.comercial.contactos.service import ContactoService
 from app.shared.enums import TipoContacto
 
-router = APIRouter(prefix="/contactos", tags=["Contactos"])
+router = APIRouter(
+    prefix="/contactos", tags=["Contactos"], dependencies=[Depends(get_current_username)]
+)
 
 
 @router.get("/", response_model=list[ContactoRead])

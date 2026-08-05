@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Query, status
 
+from app.core.dependencies import get_current_username
 from app.modules.servicios_proveedores.actividades.dependencies import get_actividad_service
 from app.modules.servicios_proveedores.actividades.schemas import (
     ActividadCreate,
@@ -9,7 +10,9 @@ from app.modules.servicios_proveedores.actividades.schemas import (
 )
 from app.modules.servicios_proveedores.actividades.service import ActividadService
 
-router = APIRouter(prefix="/actividades", tags=["Actividades"])
+router = APIRouter(
+    prefix="/actividades", tags=["Actividades"], dependencies=[Depends(get_current_username)]
+)
 
 
 @router.get("/", response_model=ActividadListado)

@@ -10,7 +10,9 @@ from app.modules.administracion.bitacora.schemas import (
 from app.modules.administracion.bitacora.service import BitacoraService
 from app.shared.enums import TipoActividadBitacora
 
-router = APIRouter(prefix="/bitacora", tags=["Bitacora"])
+router = APIRouter(
+    prefix="/bitacora", tags=["Bitacora"], dependencies=[Depends(get_current_username)]
+)
 
 
 @router.get("/", response_model=BitacoraListado)

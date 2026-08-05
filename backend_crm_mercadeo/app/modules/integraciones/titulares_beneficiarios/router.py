@@ -38,7 +38,11 @@ from app.modules.integraciones.titulares_beneficiarios.service import (
     TitularesBeneficiariosService,
 )
 
-router = APIRouter(prefix="/titulares-beneficiarios", tags=["Titulares y Beneficiarios"])
+router = APIRouter(
+    prefix="/titulares-beneficiarios",
+    tags=["Titulares y Beneficiarios"],
+    dependencies=[Depends(get_current_username)],
+)
 
 COLUMNAS_EXPORTACION = [
     ("TIPO_REGISTRO", "Tipo"),

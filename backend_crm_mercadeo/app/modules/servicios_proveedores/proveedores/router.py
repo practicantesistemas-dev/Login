@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Query, status
 
+from app.core.dependencies import get_current_username
 from app.modules.servicios_proveedores.actividades.dependencies import get_actividad_service
 from app.modules.servicios_proveedores.actividades.schemas import ActividadListado
 from app.modules.servicios_proveedores.actividades.service import ActividadService
@@ -12,7 +13,9 @@ from app.modules.servicios_proveedores.proveedores.schemas import (
 )
 from app.modules.servicios_proveedores.proveedores.service import ProveedorService
 
-router = APIRouter(prefix="/proveedores", tags=["Proveedores"])
+router = APIRouter(
+    prefix="/proveedores", tags=["Proveedores"], dependencies=[Depends(get_current_username)]
+)
 
 
 @router.get("/", response_model=ProveedorListado)

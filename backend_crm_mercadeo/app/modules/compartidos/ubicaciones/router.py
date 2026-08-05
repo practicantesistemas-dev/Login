@@ -1,10 +1,15 @@
 from fastapi import APIRouter, Depends, Query
 
+from app.core.dependencies import get_current_username
 from app.modules.compartidos.ubicaciones.dependencies import get_ubicaciones_service
 from app.modules.compartidos.ubicaciones.schemas import DepartamentoItem, MunicipioItem
 from app.modules.compartidos.ubicaciones.service import UbicacionesService
 
-router = APIRouter(prefix="/compartidos/ubicaciones", tags=["Compartidos"])
+router = APIRouter(
+    prefix="/compartidos/ubicaciones",
+    tags=["Compartidos"],
+    dependencies=[Depends(get_current_username)],
+)
 
 
 @router.get("/departamentos", response_model=list[DepartamentoItem])

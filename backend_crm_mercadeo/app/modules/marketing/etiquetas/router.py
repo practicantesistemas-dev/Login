@@ -1,10 +1,13 @@
 from fastapi import APIRouter, Depends, status
 
+from app.core.dependencies import get_current_username
 from app.modules.marketing.etiquetas.dependencies import get_etiqueta_service
 from app.modules.marketing.etiquetas.schemas import EtiquetaCreate, EtiquetaRead
 from app.modules.marketing.etiquetas.service import EtiquetaService
 
-router = APIRouter(prefix="/etiquetas", tags=["Etiquetas"])
+router = APIRouter(
+    prefix="/etiquetas", tags=["Etiquetas"], dependencies=[Depends(get_current_username)]
+)
 
 
 @router.get("/", response_model=list[EtiquetaRead])

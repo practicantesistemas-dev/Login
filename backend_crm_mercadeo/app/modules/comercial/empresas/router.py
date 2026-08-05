@@ -1,10 +1,13 @@
 from fastapi import APIRouter, Depends, status
 
+from app.core.dependencies import get_current_username
 from app.modules.comercial.empresas.dependencies import get_empresa_service
 from app.modules.comercial.empresas.schemas import EmpresaCreate, EmpresaRead, EmpresaUpdate
 from app.modules.comercial.empresas.service import EmpresaService
 
-router = APIRouter(prefix="/empresas", tags=["Empresas"])
+router = APIRouter(
+    prefix="/empresas", tags=["Empresas"], dependencies=[Depends(get_current_username)]
+)
 
 
 @router.get("/", response_model=list[EmpresaRead])
