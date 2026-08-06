@@ -23,7 +23,7 @@ def listar_bitacora(
     oportunidad_id: int | None = None,
     titular_id: int | None = None,
     skip: int = 0,
-    limit: int = Query(100, ge=1, le=200),
+    limit: int = Query(6, ge=1, le=6),
     service: BitacoraService = Depends(get_bitacora_service),
 ) -> BitacoraListado:
     return service.listar(
