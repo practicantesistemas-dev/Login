@@ -19,8 +19,9 @@ class EmpresaService:
             raise EmpresaNotFoundError(empresa_id)
         return empresa
 
-    def create(self, data: EmpresaCreate) -> Empresa:
-        empresa = Empresa(**data.model_dump())
+    def create(self, data: EmpresaCreate, username: str) -> Empresa:
+        usuario_id = self.repository.obtener_usuario_id(username)
+        empresa = Empresa(**data.model_dump(), responsable_id=usuario_id)
         return self.repository.create(empresa)
 
     def update(self, empresa_id: int, data: EmpresaUpdate) -> Empresa:

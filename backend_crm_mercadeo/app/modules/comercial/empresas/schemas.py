@@ -10,7 +10,6 @@ class EmpresaBase(BaseModel):
     direccion: str | None = None
     ciudad: str | None = None
     estado: bool = True
-    responsable_id: int | None = None
 
 
 class EmpresaCreate(EmpresaBase):
@@ -24,12 +23,12 @@ class EmpresaUpdate(BaseModel):
     direccion: str | None = None
     ciudad: str | None = None
     estado: bool | None = None
-    responsable_id: int | None = None
 
 
 class EmpresaRead(EmpresaBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    responsable_id: int | None = None
     fecha_creacion: datetime | None = None
     fecha_actualizacion: datetime | None = None

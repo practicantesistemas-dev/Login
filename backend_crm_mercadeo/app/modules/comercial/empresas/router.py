@@ -28,9 +28,11 @@ def get_empresa(
 
 @router.post("/", response_model=EmpresaRead, status_code=status.HTTP_201_CREATED)
 def create_empresa(
-    data: EmpresaCreate, service: EmpresaService = Depends(get_empresa_service)
+    data: EmpresaCreate,
+    username: str = Depends(get_current_username),
+    service: EmpresaService = Depends(get_empresa_service),
 ) -> EmpresaRead:
-    return service.create(data)
+    return service.create(data, username=username)
 
 
 @router.put("/{empresa_id}", response_model=EmpresaRead)
