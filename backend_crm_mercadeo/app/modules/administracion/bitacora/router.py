@@ -6,6 +6,7 @@ from app.modules.administracion.bitacora.schemas import (
     BitacoraCreate,
     BitacoraListado,
     BitacoraRead,
+    BitacoraUpdate,
 )
 from app.modules.administracion.bitacora.service import BitacoraService
 from app.shared.enums import TipoActividadBitacora
@@ -44,6 +45,23 @@ def registrar_seguimiento(
     service: BitacoraService = Depends(get_bitacora_service),
 ) -> BitacoraRead:
     return service.create(data, username=username)
+
+
+@router.put("/{id_bitacora}", response_model=BitacoraRead)
+def actualizar_seguimiento(
+    id_bitacora: int,
+    data: BitacoraUpdate,
+    service: BitacoraService = Depends(get_bitacora_service),
+) -> BitacoraRead:
+    return service.update(id_bitacora, data)
+
+
+@router.patch("/{id_bitacora}/completar", response_model=BitacoraRead)
+def completar_seguimiento(
+    id_bitacora: int,
+    service: BitacoraService = Depends(get_bitacora_service),
+) -> BitacoraRead:
+    return service.completar(id_bitacora)
 
 
 @router.delete("/{id_bitacora}", status_code=status.HTTP_204_NO_CONTENT)

@@ -3,7 +3,12 @@ from datetime import datetime
 from app.models import Bitacora, Contacto, Oportunidad, PlanLiga, PlanLigaTipoPlan, Usuario
 from app.modules.administracion.bitacora.exceptions import BitacoraNotFoundError
 from app.modules.administracion.bitacora.repository import BitacoraRepository
-from app.modules.administracion.bitacora.schemas import BitacoraCreate, BitacoraItem, BitacoraListado
+from app.modules.administracion.bitacora.schemas import (
+    BitacoraCreate,
+    BitacoraItem,
+    BitacoraListado,
+    BitacoraUpdate,
+)
 from app.shared.enums import EstadoBitacora, TipoActividadBitacora
 from sqlalchemy.orm import Session
 
@@ -70,6 +75,22 @@ class BitacoraService:
             usuario_id=self.repository.obtener_usuario_id(username),
         )
         return self.repository.create(bitacora)
+
+    def update(self, id_bitacora: int, data: BitacoraUpdate) -> Bitacora:
+        bitacora = self.repository.get(id_bitacora)
+        if bitacora is None:
+            raise BitacoraNotFoundError(id_bitacora)
+
+        changes = data.model_dump(exclude_unset=True)
+        if changes:
+            bitacora = self.repository.update(bitacora, changes)
+        return bitacora
+
+    def completar(self, id_bitacora: int) -> Bitacora:
+        bitacora = self.repository.get(id_bitacora)
+        if bitacora is None:
+            raise BitacoraNotFoundError(id_bitacora)
+        return self.repository.update(bitacora, {"estado": EstadoBitacora.REALIZADO})
 
     def historial_contacto(self, contacto_id: int, limit: int = 4) -> list[BitacoraItem]:
         filas = self.repository.ultimos_por_contacto(contacto_id, limit=limit)

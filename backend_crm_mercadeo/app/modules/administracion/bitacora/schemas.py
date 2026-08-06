@@ -25,6 +25,18 @@ class BitacoraCreate(BaseModel):
         return self
 
 
+class BitacoraUpdate(BaseModel):
+    tipo: TipoActividadBitacora | None = None
+    descripcion: str | None = None
+    proximo_paso: str | None = None
+    fecha: datetime | None = None
+    contacto_id: int | None = None
+    nombre_empresa: str | None = None
+    oportunidad_id: int | None = None
+    titular_id: int | None = None
+    estado: EstadoBitacora | None = None
+
+
 class BitacoraRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
