@@ -120,9 +120,16 @@ class TitularesBeneficiariosService:
             raise CupoBeneficiariosExcedidoError(id_titular)
 
         fecha_ingreso = self.repository.obtener_fecha_ingreso_titular(id_titular)
+        orden = self.repository.siguiente_orden_beneficiario(id_titular)
         datos = data.model_dump()
         id_beneficiario = self.repository.crear_beneficiario(
-            id_titular, datos, fecha_ingreso, cantidad_actual + 1, titular["TIPO_PLAN"]
+            id_titular,
+            datos,
+            fecha_ingreso,
+            orden,
+            titular["TIPO_PLAN"],
+            titular["EMPRESA"],
+            titular["PLAN_NOMBRE"],
         )
 
         usuario_creado = self.legacy_repository.crear_usuario_servinte(
@@ -187,14 +194,15 @@ class TitularesBeneficiariosService:
             raise CupoBeneficiariosExcedidoError(id_titular_nuevo)
 
         detalle_titular_nuevo = self.repository.obtener_titular(id_titular_nuevo)
-        fecha_ingreso_nuevo = self.repository.obtener_fecha_ingreso_titular(id_titular_nuevo)
+        orden = self.repository.siguiente_orden_beneficiario(id_titular_nuevo)
         if not self.repository.cambiar_titular_beneficiario(
             id_titular_actual,
             id_beneficiario,
             id_titular_nuevo,
-            cantidad_actual + 1,
+            orden,
             detalle_titular_nuevo["TIPO_PLAN"],
-            fecha_ingreso_nuevo,
+            detalle_titular_nuevo["EMPRESA"],
+            detalle_titular_nuevo["PLAN_NOMBRE"],
         ):
             raise BeneficiarioNotFoundError(id_beneficiario)
 

@@ -94,11 +94,9 @@ CAMPOS_BENEFICIARIO_CREACION = {
     "DEPARTAMENTO": "departamento",
     "CORREO": "correo",
     "TELEFONO": "telefono",
-    "EMPRESA": "empresa",
     "EPS": "eps",
     "OTRAEPS": "otraeps",
     "PLAN_SALUD": "plan_salud",
-    "PLAN_NOMBRE": "plan_nombre",
 }
 
 CAMPOS_BENEFICIARIO_EDITABLES = {
@@ -560,18 +558,21 @@ class TitularesBeneficiariosRepository:
         id_titular_nuevo: int,
         orden: int,
         tipo_plan: str | None,
-        fecha_ingreso: date,
+        empresa: str | None,
+        plan_nombre: str | None,
     ) -> bool:
-        """Mueve el beneficiario al nuevo titular heredando lo que comparten
-        todos los beneficiarios de ese grupo: tipo_plan y fecha_ingreso (los
-        mismos campos que crear_beneficiario toma del titular al dar de alta)."""
+        """Mueve el beneficiario al nuevo titular heredando tipo_plan, empresa
+        y plan_nombre del nuevo titular. FECHA_INGRESO NO se toca: la
+        vigencia propia del beneficiario es independiente del titular al que
+        quede asociado administrativamente."""
         beneficiario = self.db.get(PlanLigaBeneficiario, id_beneficiario)
         if beneficiario is None or beneficiario.planliga_id != id_titular_actual:
             return False
         beneficiario.planliga_id = id_titular_nuevo
         beneficiario.orden = orden
         beneficiario.tipo_plan = tipo_plan
-        beneficiario.fecha_ingreso = fecha_ingreso
+        beneficiario.empresa = empresa
+        beneficiario.plan_nombre = plan_nombre
         self.db.commit()
         return True
 
@@ -732,6 +733,28 @@ class TitularesBeneficiariosRepository:
         )
         return self.db.scalar(stmt) or 0
 
+    def siguiente_orden_beneficiario(self, id_titular: int) -> int:
+        """ORDEN a asignar al proximo beneficiario del titular: reutiliza el
+        menor ORDEN de un beneficiario inactivo (ese cupo quedo libre) si
+        existe; si no hay huecos, usa el siguiente consecutivo tras el
+        maximo ORDEN ya usado (activo o inactivo)."""
+        orden_libre = self.db.scalar(
+            select(func.min(PlanLigaBeneficiario.orden)).where(
+                PlanLigaBeneficiario.planliga_id == id_titular,
+                PlanLigaBeneficiario.estado == ESTADO_INACTIVO,
+                PlanLigaBeneficiario.orden.isnot(None),
+            )
+        )
+        if orden_libre is not None:
+            return orden_libre
+
+        maximo = self.db.scalar(
+            select(func.max(PlanLigaBeneficiario.orden)).where(
+                PlanLigaBeneficiario.planliga_id == id_titular,
+            )
+        )
+        return (maximo or 0) + 1
+
     def crear_beneficiario(
         self,
         id_titular: int,
@@ -739,6 +762,8 @@ class TitularesBeneficiariosRepository:
         fecha_ingreso: date,
         orden: int,
         tipo_plan: str | None,
+        empresa: str | None,
+        plan_nombre: str | None,
     ) -> int:
         campos = {
             atributo: datos.get(campo)
@@ -748,6 +773,8 @@ class TitularesBeneficiariosRepository:
             **campos,
             planliga_id=id_titular,
             tipo_plan=tipo_plan,
+            empresa=empresa,
+            plan_nombre=plan_nombre,
             orden=orden,
             estado=ESTADO_ACTIVO,
             tipo_afiliado="2",

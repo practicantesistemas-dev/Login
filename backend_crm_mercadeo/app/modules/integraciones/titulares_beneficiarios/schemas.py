@@ -1,7 +1,25 @@
 from datetime import date
+from typing import Any, Optional
 
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, model_validator
+
+
+class EntradaMayusculas(BaseModel):
+    """Base para los esquemas que reciben datos del cliente: normaliza a
+    mayusculas cualquier valor de texto, sin importar como lo haya escrito
+    el usuario (minusculas, mixto, etc.), para mantener consistencia con los
+    datos legacy en Oracle."""
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalizar_mayusculas(cls, datos: Any) -> Any:
+        if not isinstance(datos, dict):
+            return datos
+        return {
+            campo: valor.upper() if isinstance(valor, str) else valor
+            for campo, valor in datos.items()
+        }
+
 
 class ResumenTitularesBeneficiarios(BaseModel):
     titulares_activos: int
@@ -63,7 +81,7 @@ class ListadoTitulares(BaseModel):
     ESTADO: str
 
 
-class TitularUpdate(BaseModel):
+class TitularUpdate(EntradaMayusculas):
     DOCUMENTO: Optional[str] = None
     TIPO_DOCUMENTO: Optional[str] = None
     NOMBRE1: Optional[str] = None
@@ -85,7 +103,7 @@ class TitularActivar(BaseModel):
     FECHA_INGRESO: date
 
 
-class ReemplazoPersona(BaseModel):
+class ReemplazoPersona(EntradaMayusculas):
     """Datos de la persona nueva que reemplaza al titular/beneficiario actual.
     El plan, cupo y demas datos legacy (tipo_plan, eps, plan_salud, etc.) se
     heredan del registro reemplazado, no se piden aqui."""
@@ -115,7 +133,7 @@ class ReemplazoTitularResultado(BaseModel):
     registros_incle_marcados_anterior: int
 
 
-class TitularCrear(BaseModel):
+class TitularCrear(EntradaMayusculas):
     TIPO_PLAN: Optional[str] = None
     TIPO_DOCUMENTO: str
     DOCUMENTO: str
@@ -186,7 +204,11 @@ class BeneficiarioDetalle(BaseModel):
     ESTADO: Optional[str] = None
 
 
-class BeneficiarioCrear(BaseModel):
+class BeneficiarioCrear(EntradaMayusculas):
+    """EMPRESA, TIPO_PLAN y PLAN_NOMBRE no se piden aqui: el beneficiario
+    siempre hereda esos datos del titular al que se asocia (ver
+    TitularesBeneficiariosService.crear_beneficiario)."""
+
     TIPO_DOCUMENTO: str
     DOCUMENTO: str
     NOMBRE1: str
@@ -200,11 +222,9 @@ class BeneficiarioCrear(BaseModel):
     DEPARTAMENTO: str
     CORREO: Optional[str] = None
     TELEFONO: Optional[str] = None
-    EMPRESA: Optional[str] = None
     EPS: Optional[str] = None
     OTRAEPS: Optional[str] = None
     PLAN_SALUD: Optional[str] = None
-    PLAN_NOMBRE: Optional[str] = None
 
 
 class CreacionBeneficiarioResultado(BaseModel):
@@ -227,7 +247,7 @@ class DesactivacionBeneficiarioResultado(BaseModel):
     registros_incle_marcados: int
 
 
-class BeneficiarioUpdate(BaseModel):
+class BeneficiarioUpdate(EntradaMayusculas):
     TIPO_DOCUMENTO: Optional[str] = None
     DOCUMENTO: Optional[str] = None
     NOMBRE1: Optional[str] = None
@@ -245,7 +265,7 @@ class BeneficiarioUpdate(BaseModel):
     ESTADO: Optional[str] = None
 
 
-class CambioTitularBeneficiario(BaseModel):
+class CambioTitularBeneficiario(EntradaMayusculas):
     """Documento (cedula) del titular al que se va a mover el beneficiario."""
 
     DOCUMENTO_TITULAR_NUEVO: str
