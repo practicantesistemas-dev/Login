@@ -17,6 +17,7 @@ class Settings(BaseSettings):
 
     secret_key: str = "cambia-esta-clave-en-produccion-liga-2026"
     algorithm: str = "HS256"
+    access_token_expire_minutes: int = 480
 
     cors_origins: list[str] = [
         "http://localhost:3000",

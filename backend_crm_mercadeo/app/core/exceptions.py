@@ -13,6 +13,16 @@ class ConflictError(Exception):
         self.detail = detail
 
 
+class UnauthorizedError(Exception):
+    def __init__(self, detail: str = "No autorizado") -> None:
+        self.detail = detail
+
+
+class ForbiddenError(Exception):
+    def __init__(self, detail: str = "Acceso denegado") -> None:
+        self.detail = detail
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(NotFoundError)
     async def not_found_handler(_: Request, exc: NotFoundError) -> JSONResponse:
@@ -21,6 +31,14 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(ConflictError)
     async def conflict_handler(_: Request, exc: ConflictError) -> JSONResponse:
         return JSONResponse(status_code=409, content={"detail": exc.detail})
+
+    @app.exception_handler(UnauthorizedError)
+    async def unauthorized_handler(_: Request, exc: UnauthorizedError) -> JSONResponse:
+        return JSONResponse(status_code=401, content={"detail": exc.detail})
+
+    @app.exception_handler(ForbiddenError)
+    async def forbidden_handler(_: Request, exc: ForbiddenError) -> JSONResponse:
+        return JSONResponse(status_code=403, content={"detail": exc.detail})
 
     @app.exception_handler(oracledb.IntegrityError)
     async def oracle_integrity_handler(_: Request, exc: oracledb.IntegrityError) -> JSONResponse:

@@ -5,6 +5,7 @@ from app.core.exceptions import register_exception_handlers
 from app.core.logging import setup_logging
 from app.core.middleware import setup_middlewares
 from app.modules.administracion.bitacora.router import router as bitacora_router
+from app.modules.auth.router import router as auth_router
 from app.modules.comercial.contactos.router import router as contactos_router
 from app.modules.comercial.empresas.router import router as empresas_router
 from app.modules.comercial.tablero.router import router as tablero_router
@@ -24,6 +25,7 @@ setup_middlewares(app)
 register_exception_handlers(app)
 
 app.include_router(actividades_router, prefix=settings.api_prefix)
+app.include_router(auth_router, prefix=settings.api_prefix)
 app.include_router(bitacora_router, prefix=settings.api_prefix)
 app.include_router(contactos_router, prefix=settings.api_prefix)
 app.include_router(empresas_router, prefix=settings.api_prefix)
