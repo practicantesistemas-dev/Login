@@ -2,7 +2,12 @@ from fastapi import APIRouter, Depends, status
 
 from app.core.dependencies import get_current_username
 from app.modules.comercial.empresas.dependencies import get_empresa_service
-from app.modules.comercial.empresas.schemas import EmpresaCreate, EmpresaRead, EmpresaUpdate
+from app.modules.comercial.empresas.schemas import (
+    EmpresaCreate,
+    EmpresaRead,
+    EmpresaUpdate,
+    ImportacionEmpresasPlanLigaResultado,
+)
 from app.modules.comercial.empresas.service import EmpresaService
 
 router = APIRouter(
@@ -33,6 +38,13 @@ def create_empresa(
     service: EmpresaService = Depends(get_empresa_service),
 ) -> EmpresaRead:
     return service.create(data, username=username)
+
+
+@router.post("/importar-plan-liga", response_model=ImportacionEmpresasPlanLigaResultado)
+def importar_empresas_plan_liga(
+    service: EmpresaService = Depends(get_empresa_service),
+) -> ImportacionEmpresasPlanLigaResultado:
+    return service.importar_desde_plan_liga()
 
 
 @router.put("/{empresa_id}", response_model=EmpresaRead)

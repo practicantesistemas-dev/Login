@@ -3,7 +3,11 @@ from sqlalchemy.orm import Session
 from app.models import Empresa
 from app.modules.comercial.empresas.exceptions import EmpresaNotFoundError
 from app.modules.comercial.empresas.repository import EmpresaRepository
-from app.modules.comercial.empresas.schemas import EmpresaCreate, EmpresaUpdate
+from app.modules.comercial.empresas.schemas import (
+    EmpresaCreate,
+    EmpresaUpdate,
+    ImportacionEmpresasPlanLigaResultado,
+)
 
 
 class EmpresaService:
@@ -32,3 +36,20 @@ class EmpresaService:
     def delete(self, empresa_id: int) -> None:
         empresa = self.get(empresa_id)
         self.repository.delete(empresa)
+
+    # Crea una Empresa (sin NIT: no existe en el origen) por cada nombre de
+    # intranet_planliga.empresa que todavia no tenga una fila equivalente en
+    # mercadeo_crm_empresas (comparando razon_social sin distinguir mayusculas/espacios).
+    def importar_desde_plan_liga(self) -> ImportacionEmpresasPlanLigaResultado:
+        existentes = self.repository.razones_sociales_existentes()
+        creadas: list[str] = []
+        for nombre in self.repository.nombres_empresa_planliga():
+            clave = nombre.strip().upper()
+            if clave in existentes:
+                continue
+            self.repository.db.add(Empresa(razon_social=nombre.strip(), estado=True))
+            existentes.add(clave)
+            creadas.append(nombre.strip())
+        if creadas:
+            self.repository.db.commit()
+        return ImportacionEmpresasPlanLigaResultado(creadas=len(creadas), nombres=creadas)

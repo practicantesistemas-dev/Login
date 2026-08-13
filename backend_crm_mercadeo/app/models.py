@@ -189,7 +189,9 @@ class Empresa(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     razon_social: Mapped[str] = mapped_column(String(200), nullable=False)
-    nit: Mapped[str] = mapped_column(String(30), nullable=False, unique=True)
+    # Nulo para empresas importadas desde intranet_planliga.empresa (nombre libre sin NIT
+    # asociado); sigue siendo unique (Oracle permite varios NULL en una columna unique).
+    nit: Mapped[str | None] = mapped_column(String(30), unique=True)
     industria: Mapped[str | None] = mapped_column(String(100))
     direccion: Mapped[str | None] = mapped_column(String(200))
     ciudad: Mapped[str | None] = mapped_column(String(100))

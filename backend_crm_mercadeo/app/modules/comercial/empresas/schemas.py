@@ -5,7 +5,9 @@ from pydantic import BaseModel, ConfigDict
 
 class EmpresaBase(BaseModel):
     razon_social: str
-    nit: str
+    # Nulo para empresas importadas desde Plan Liga (no traen NIT); las creadas a mano
+    # desde el formulario lo siguen exigiendo del lado del frontend.
+    nit: str | None = None
     industria: str | None = None
     direccion: str | None = None
     ciudad: str | None = None
@@ -32,3 +34,8 @@ class EmpresaRead(EmpresaBase):
     responsable_id: int | None = None
     fecha_creacion: datetime | None = None
     fecha_actualizacion: datetime | None = None
+
+
+class ImportacionEmpresasPlanLigaResultado(BaseModel):
+    creadas: int
+    nombres: list[str]
