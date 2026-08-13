@@ -353,12 +353,9 @@ class Usuario(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     usuario: Mapped[str | None] = mapped_column(String(50))
     nombres: Mapped[str | None] = mapped_column(String(50))
-    # Columnas usadas solo para el login (ver modules/auth): la contrasena en
-    # esta tabla esta en texto plano (mismo esquema que valida Login/Backend,
-    # no se aplica bcrypt aqui para no romper las credenciales existentes).
     contrasena: Mapped[str | None] = mapped_column(String(100))
     estado: Mapped[str | None] = mapped_column(String(20))
-    portal_rol: Mapped[str | None] = mapped_column(String(20))
+    id_clase: Mapped[int | None] = mapped_column(Integer)
     id_area: Mapped[int | None] = mapped_column(Integer)
     num_id: Mapped[int | None] = mapped_column(Integer)
 

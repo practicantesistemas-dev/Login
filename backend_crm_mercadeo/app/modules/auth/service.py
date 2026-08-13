@@ -21,7 +21,9 @@ def _contrasena_coincide(guardada: str | None, ingresada: str) -> bool:
 
 
 def _rol(usuario: Usuario) -> str:
-    return usuario.portal_rol or "usuario"
+    # No hay nombre de rol en esta tabla, solo ID_CLASE (numerico); se expone
+    # tal cual hasta que se sepa el mapeo numero -> nombre de rol.
+    return str(usuario.id_clase) if usuario.id_clase is not None else "usuario"
 
 
 class AuthService:
