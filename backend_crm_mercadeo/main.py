@@ -8,6 +8,7 @@ from app.modules.administracion.bitacora.router import router as bitacora_router
 from app.modules.auth.router import router as auth_router
 from app.modules.comercial.contactos.router import router as contactos_router
 from app.modules.comercial.empresas.router import router as empresas_router
+from app.modules.comercial.oportunidades.router import router as oportunidades_router
 from app.modules.comercial.tablero.router import router as tablero_router
 from app.modules.compartidos.ubicaciones.router import router as ubicaciones_router
 from app.modules.marketing.etiquetas.router import router as etiquetas_router
@@ -30,6 +31,7 @@ app.include_router(bitacora_router, prefix=settings.api_prefix)
 app.include_router(contactos_router, prefix=settings.api_prefix)
 app.include_router(empresas_router, prefix=settings.api_prefix)
 app.include_router(etiquetas_router, prefix=settings.api_prefix)
+app.include_router(oportunidades_router, prefix=settings.api_prefix)
 app.include_router(proveedores_router, prefix=settings.api_prefix)
 app.include_router(tablero_router, prefix=settings.api_prefix)
 app.include_router(ubicaciones_router, prefix=settings.api_prefix)

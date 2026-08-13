@@ -281,6 +281,11 @@ class Oportunidad(Base):
     servicio_id: Mapped[int | None] = mapped_column(
         ForeignKey("intranet_planliga_tipo_plan.id")
     )
+    # Texto libre: servicio_id (FK a intranet_planliga_tipo_plan, ver relationship "servicio"
+    # abajo) es especifico del catalogo de planes Plan Liga y no cubre las categorias que
+    # ofrece el CRM Comercial (Tamizajes, Brigadas de Salud, etc.), asi que el servicio
+    # elegido en el formulario viaja en esta columna en paralelo.
+    servicio_nombre: Mapped[str | None] = mapped_column(String(150))
     etapa_id: Mapped[int | None] = mapped_column(ForeignKey("mercadeo_crm_etapas_embudo.id"))
     responsable_id: Mapped[int | None] = mapped_column(ForeignKey("intranet_usuarios.id"))
     valor: Mapped[float | None] = mapped_column(Float)
